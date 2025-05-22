@@ -4,24 +4,24 @@
     "삼성카드 & MILEAGE PLATINUM (스카이패스)",
     "삼성 iD SIMPLE 카드",
     "삼성 iD GLOBAL 카드",
-    "삼성 iD ALL 카드",
     "삼성 iD ON 카드",
+    "삼성 iD ALL 카드",
     "THE iD. PLATINUM(포인트)",
     "taptap DIGITAL",
     "네이버페이 taptap",
-    "taptap DRIVE"
+    "삼성 iD ENERGY 카드"
   ],
   "신한카드": [
     "신한카드 Mr.Life",
     "신한카드 처음(ANNIVERSE)",
     "신한카드 Deep Oil",
-    "신한카드 Air One",
     "신한카드 The BEST-F",
+    "신한카드 Air One",
     "신한카드 RPM+ Platinum#",
     "K-패스 신한카드",
-    "신한카드 The BEST-X",
     "신한카드 Point Plan",
-    "신한카드 The CLASSIC+"
+    "메리어트 본보이™ 더 베스트 신한카드",
+    "신한카드 The BEST-X"
   ],
   "KB국민카드": [
     "KB국민 My WE:SH 카드",
@@ -31,8 +31,8 @@
     "BeV V카드(스카이패스형)",
     "다담카드",
     "The Easy카드",
-    "쿠팡 와우 카드",
     "BeV V카드(포인트형)",
+    "쿠팡 와우 카드",
     "HERITAGE Smart [대한항공 마일리지형]"
   ],
   "롯데카드": [
@@ -44,8 +44,8 @@
     "LOCA Professional",
     "LOCA LIKIT Eat",
     "SKYPASS 롯데 아멕스카드",
-    "디지로카 Edu",
-    "디지로카 Paris"
+    "롯데멤버스 카드 프리미엄",
+    "디지로카 Edu"
   ],
   "우리카드": [
     "카드의정석 EVERY MILE SKYPASS",
@@ -53,13 +53,12 @@
     "DA카드의정석Ⅱ",
     "카드의정석 SHOPPING+",
     "ALL 우리카드 Infinite",
-    "로얄블루1000카드 [SKYPASS]",
     "트래블월렛 우리카드",
+    "로얄블루1000카드 [SKYPASS]",
     "카드의정석 PREMIUM MILEAGE(SKYPASS)",
     "카드의정석2",
-    "ALL 우리카드 Premium"
+    "카드의정석 TEN"
   ],
-  "": [],
   "현대카드": [
     "현대카드 M",
     "현대카드ZERO Edition3(할인형)",
@@ -76,20 +75,20 @@
     "JADE Classic",
     "하나 스카이패스 아멕스 플래티늄 카드",
     "원더카드 (원더 Life)",
-    "CLUB SK 카드",
     "JADE Prime",
+    "CLUB SK 카드",
     "하나 CLUB H 아메리칸 익스프레스 리저브 카드",
     "원더카드 (원더 HAPPY+)",
-    "원더카드 FREE",
     "JADE First Centum",
+    "원더카드 FREE",
     "트래블로그 신용카드"
   ],
   "NH농협카드": [
     "올바른 FLEX 카드",
     "zgm.the pay카드",
     "올바른 NEW HAVE카드",
-    "zgm 할인카드",
     "zgm.일본여행중 카드",
+    "zgm 할인카드",
     "올바른 MYPICK 카드",
     "zgm.휴가중카드",
     "별다줄카드",
@@ -98,15 +97,26 @@
   ],
   "IBK기업은행": [
     "IBK포인트(신용)",
-    "BLISS.5 카드(마일리지)",
     "IBK포인트3.8(신용)",
+    "BLISS.5 카드(마일리지)",
     "I-Mileage (대한항공)",
     "IBK무민카드(신용)",
-    "K-패스 (신용)",
     "K-22(Mileage)",
+    "K-패스 (신용)",
+    "I-어디로든 그린카드",
     "I-ALL",
-    "BLISS.5 카드(포인트)",
-    "I-어디로든 그린카드"
+    "IBK-Hybrid(하이브리드)카드"
   ],
-  "BC 바로카드": []
+  "BC 바로카드": [
+    "BC 바로 클리어 플러스",
+    "GOAT BC 바로카드",
+    "BC 바로 MACAO 카드",
+    "BC 바로 On&Off 카드",
+    "始發(시발)카드",
+    "BC 바로 에어 플러스 아시아나",
+    "K-패스 카드",
+    "BC 바로 기후동행카드",
+    "BC 바로 리워드 플러스",
+    "신세계 BC 바로 콰트로 플러스"
+  ]
 }
