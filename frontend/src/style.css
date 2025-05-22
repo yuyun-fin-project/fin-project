@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================
+    Global Reset
+======================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ========================
+    Base
+======================== */
+:root {
+  --main-bg: #f5f7fa;
+  --primary-color: #2f80ed;
+  --text-color: #222;
+  --font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--main-bg);
+  color: var(--text-color);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================
+    Layout
+======================== */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+}
+
+/* ========================
+    Typography
+======================== */
+h1, h2, h3, h4, h5 {
+  font-weight: 700;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* ========================
+    Buttons
+======================== */
+button {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #1c6dd0;
+}
+
+/* ========================
+    Utils
+======================== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
