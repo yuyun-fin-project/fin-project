@@ -2,7 +2,10 @@ from django.shortcuts import render
 from .utils.api_clients.mydata_api import get_card_list, get_card_approval
 from .utils.data_processors.my_data_cleaner import data_preprocessing
 from rest_framework.decorators import api_view
+<<<<<<< Updated upstream
 from rest_framework.response import Response
+=======
+>>>>>>> Stashed changes
 import requests
 # from .serializers import DepositOptionSerializer, DepositProductsSerializer
 # from .models import DepositProducts, DepositOptions
