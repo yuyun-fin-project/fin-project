@@ -11,6 +11,7 @@ from app.models.prepaid_approval import PrepaidApproval
 from app.models.loan_short_term import LoanShortTerm
 from app.models.loan_long_term import LoanLongTerm
 from app.core.security import hash_password 
+from scripts.dummy_category import CARDS_LIST
 
 import uuid
 from faker import Faker
@@ -23,24 +24,16 @@ Faker.seed()
 db = SessionLocal()
 
 ORG_CODES = {
-"POST": "우체국",
 "KB_CARD": "KB국민카드",
 "WOORI_CARD": "우리카드",
-"SC": "SC은행",
-"NONGHYUP": "농협은행",
 "HANA_CARD": "하나카드",
 "LOTTE": "롯데카드",
-"WOORI": "우리은행",
-"KB_BANK": "국민은행",
 "IBK": "IBK기업은행",
-"SHINHAN_BANK": "신한은행",
-"HANA_BANK": "하나은행",
 "SAMSUNG": "삼성카드",
 "SHINHAN_CARD": "신한카드",
 "HYUNDAI": "현대카드",
-"BC": "비씨카드",
-"MIRAE": "미래에셋생명",
-"KAKAO": "카카오뱅크"
+"BC": "BC 바로카드",
+"NH": "NH농협카드",
 }
 
 # 소비 카테고리 - 소비처 목록 정의
@@ -111,10 +104,14 @@ def generate_user_dummy_data(user):
             for _ in range(random.randint(1, 7)):
                 card_id = f"CARD_{uuid.uuid4().hex[:8]}"
                 org_code = random.choice(list(ORG_CODES.keys()))
+                if ORG_CODES[org_code] in CARDS_LIST.keys():
+                    fake_card_name = random.choice(list(CARDS_LIST[ORG_CODES[org_code]]))
+                else:
+                    fake_card_name = fake.credit_card_provider()
                 cards.append(Card(
                     user_id=user.id,
                     card_id=card_id,
-                    card_name=fake.credit_card_provider(),
+                    card_name= fake_card_name,
                     card_num=fake.credit_card_number(),
                     is_consent=True,
                     card_member="1",

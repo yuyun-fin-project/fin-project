@@ -24,15 +24,16 @@ for num in nums:
     driver.get(url)
 
     # 렌더링 대기
-    time.sleep(2)
+    time.sleep(1)
     selector = f"#q-app > section > div.team_detail.team_{num} > div > div.top_bar > div > b"
     card_company = driver.find_element(By.CSS_SELECTOR, selector).text
     print(card_company)
-    card_company_list[card_company] = []
+    if card_company:
+        card_company_list[card_company] = []
     for i in range(1, 11):  # 1~10번째 카드
         try:
             if num == 32:
-                selector = f"#q-app > section > div.team_detail.team_32 > section > div.inner > article.con_area > div > div > ul > li:nth-child({i})) > div > div.card_data > div.name > p > span.card_name"
+                selector = f"#q-app > section > div.team_detail.team_32 > section > div.inner > article.con_area > div > div > ul > li:nth-child({i}) > div > div.card_data > div.name > p > span.card_name"
             else:
                 selector = f"#q-app > section > div.team_detail.team_{num} > section > div:nth-child(3) > article.con_area > div > div > ul > li:nth-child({i}) > div > div.card_data > div.name > p > span.card_name"
             card_name = driver.find_element(By.CSS_SELECTOR, selector).text
