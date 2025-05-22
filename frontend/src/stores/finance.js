@@ -1,14 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import { getFinanceProducts } from '../services/financeApi'
 
 export const useFinanceStore = defineStore('finance', () => {
   const isLoading = ref(false)
   const error = ref(null)
-
-  // 금감원 API 설정
-  const FSS_API_KEY = import.meta.env.VITE_FSS_API_KEY
-  const PROXY_BASE_URL = 'http://localhost:4000'
 
   // ChatGPT API 설정
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY
@@ -19,27 +16,7 @@ export const useFinanceStore = defineStore('finance', () => {
     error.value = null
 
     try {
-      const response = await axios.get(`${PROXY_BASE_URL}/api/products/${type}`, {
-        params: {
-          apiKey: FSS_API_KEY
-        }
-      })
-
-      console.log('API 응답:', response.data)
-
-      // 에러 응답 확인
-      if (response.data.result.err_cd) {
-        throw new Error(`API 오류: ${response.data.result.err_msg} (${response.data.result.err_cd})`)
-      }
-
-      // 데이터 구조 검증
-      if (!response.data || !response.data.result) {
-        console.error('응답 데이터:', response.data)
-        throw new Error('API 응답 데이터 형식이 올바르지 않습니다.')
-      }
-
-      const baseList = response.data.result.baseList || []
-      const optionList = response.data.result.optionList || []
+      const { baseList, optionList } = await getFinanceProducts(type)
 
       // 기본 정보와 옵션 정보 결합
       const products = baseList.map(item => {

@@ -2,7 +2,7 @@
   <header class="header">
     <router-link to="/" class="logo">Bank</router-link>
     <nav class="nav">
-      <router-link to="/products" active-class="active">금융</router-link>
+      <router-link to="/dashboard" active-class="active">금융</router-link>
       <router-link to="/recommend" active-class="active">추천</router-link>
       <router-link to="/community" active-class="active">커뮤니티</router-link>
       <router-link to="/mydata" active-class="active">마이데이터</router-link>
