@@ -3,15 +3,15 @@ from django.db import models
 
 class Card(models.Model):
     CARD_TYPE_CHOICES = (
-        ('CREDIT', '신용'),
-        ('CHECK', '체크(직불포함)'),
-        ('DEBIT', '소액신용체크'),
+        ('01', '신용'),
+        ('02', '체크(직불포함)'),
+        ('03', '소액신용체크'),
         # 필요 시 추가
     )
     
     OWNER_TYPE_CHOICES = (
-        ('SELF', '본인'),
-        ('FAMILY', '가족'),
+        ('1', '본인'),
+        ('2', '가족'),
     )
     
     card_id = models.CharField(max_length=100, primary_key=True, help_text="카드 식별자")
