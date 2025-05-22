@@ -18,15 +18,22 @@
         </button>
       </div>
 
-      <!-- 검색 바 -->
+      <!-- 검색 입력 -->
       <div class="mb-6">
         <div class="relative">
           <input 
             type="text" 
             v-model="searchQuery"
             placeholder="검색어를 입력하세요" 
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700"
+            @keyup.enter="handleSearch"
           >
+          <button
+            @click="handleSearch"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+          >
+            검색
+          </button>
         </div>
       </div>
 
@@ -119,6 +126,16 @@ const paginatedPosts = computed(() =>
 
 const setPage = (page: number) => {
   currentPage.value = page
+}
+
+const handleSearch = () => {
+  if (!searchQuery.value.trim()) return
+  
+  // 여기에 검색 로직 구현
+  console.log('Searching for:', searchQuery.value)
+  
+  // 검색어 초기화
+  searchQuery.value = ''
 }
 </script>
 

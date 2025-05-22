@@ -27,7 +27,17 @@ export default defineConfig({
             proxyReq.setHeader('Origin', 'https://finlife.fss.or.kr');
             proxyReq.setHeader('Referer', 'https://finlife.fss.or.kr/');
           });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+            proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+            proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+          });
         }
+      },
+      '/finlifeapi': {
+        target: 'http://finlife.fss.or.kr',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/finlifeapi/, '')
       }
     }
   },

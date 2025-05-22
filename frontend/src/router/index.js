@@ -6,7 +6,8 @@ import LoginPage from '../pages/LoginPage.vue'
 import AIView from '../pages/AIView.vue'
 import MyDataView from '../pages/MyDataView.vue'
 import CommunityView from '../pages/CommunityView.vue'
-import ProductComparisonView from '../views/ProductComparisonView.vue'
+import HomeView from '../views/HomeView.vue'
+import StockSearchView from '../views/StockSearchView.vue'
 
 const routes = [
   { 
@@ -34,15 +35,27 @@ const routes = [
     meta: { keepAlive: true }
   },
   {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../pages/DashboardView.vue'),
+    meta: { keepAlive: true }
+  },
+  {
     path: '/products',
     name: 'products',
-    component: ProductComparisonView
+    component: () => import('../pages/ProductComparisonView.vue'),
+    meta: { keepAlive: true }
   },
   {
     path: '/community',
     name: 'Community',
     component: () => import('../pages/CommunityView.vue'),
     meta: { keepAlive: true }
+  },
+  {
+    path: '/stock-search',
+    name: 'stock-search',
+    component: StockSearchView
   },
   {
     path: '/:pathMatch(.*)*',
