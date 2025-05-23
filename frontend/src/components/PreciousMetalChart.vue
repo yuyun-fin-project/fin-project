@@ -359,6 +359,7 @@ input[type="date"] {
   background-color: transparent;
 }
 
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
   position: absolute;
