@@ -13,5 +13,5 @@ urlpatterns = [
     path('kakao/callback/', views.kakao_callback, name='kakao-callback'),
     path("api/token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
     path('logout/', views.logout, name='logout'),
-    path('profile/<user_id>/', views.profile, name = 'profile'),
+    path('profile/<int:user_id>/', views.profile, name = 'profile'),
 ]
