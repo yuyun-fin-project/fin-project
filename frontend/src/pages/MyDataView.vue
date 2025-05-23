@@ -12,6 +12,7 @@
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
         마이데이터 분석
       </h1>
+      
       <div class="grid gap-6">
         <HeroSection />
         <CardSummarySection />

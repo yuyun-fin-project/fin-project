@@ -1,121 +1,344 @@
 <template>
-  <div class="max-w-4xl mx-auto p-4">
-    <!-- 검색 필터 -->
-    <div class="mb-6 bg-white p-4 rounded-lg shadow">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">상품 유형</label>
-          <select
-            v-model="productType"
-            class="w-full border rounded-md p-2"
-          >
-            <option value="deposit">예금</option>
-            <option value="saving">적금</option>
-          </select>
+  <div class="search-container space-y-6">
+    <!-- 검색바 -->
+    <div class="relative">
+      <div class="relative">
+        <input
+          v-model="searchTerm"
+          type="text"
+          placeholder="상품명 또는 은행명으로 검색"
+          class="w-full h-12 px-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+          @input="handleSearch"
+          @focus="showHistory = true"
+        >
+        <button
+          v-if="searchTerm"
+          @click="clearSearch"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 검색 히스토리 -->
+      <div
+        v-if="showHistory && searchHistory.length > 0"
+        class="absolute z-10 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden"
+      >
+        <div class="p-3 border-b border-gray-100">
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-700">최근 검색어</span>
+            <button
+              @click="clearSearchHistory"
+              class="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+            >
+              전체 삭제
+            </button>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">은행명</label>
-          <input
-            v-model="searchBank"
-            type="text"
-            placeholder="은행명 검색"
-            class="w-full border rounded-md p-2"
+        <div class="max-h-60 overflow-y-auto">
+          <div
+            v-for="term in searchHistory"
+            :key="term"
+            class="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
+            @click="selectSearchTerm(term)"
           >
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">최소 금리</label>
-          <input
-            v-model="minRate"
-            type="number"
-            step="0.1"
-            placeholder="최소 금리"
-            class="w-full border rounded-md p-2"
-          >
+            <span class="text-gray-700">{{ term }}</span>
+            <button
+              @click.stop="removeFromHistory(term)"
+              class="p-1 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 로딩 상태 -->
-    <div v-if="financeStore.isLoading" class="text-center py-8">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+    <!-- 필터 옵션 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="relative">
+        <select
+          v-model="filters.bank"
+          class="w-full h-12 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none text-gray-900"
+          @change="applyFilters"
+        >
+          <option value="">은행 선택</option>
+          <option v-for="bank in banks" :key="bank.code" :value="bank.code">
+            {{ bank.name }}
+          </option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="relative">
+        <select
+          v-model="filters.period"
+          class="w-full h-12 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none text-gray-900"
+          @change="applyFilters"
+        >
+          <option value="">가입기간</option>
+          <option value="6">6개월</option>
+          <option value="12">12개월</option>
+          <option value="24">24개월</option>
+          <option value="36">36개월</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="relative">
+        <input
+          v-model.number="filters.minAmount"
+          type="text"
+          placeholder="최소금액"
+          class="w-full h-12 pl-4 pr-16 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          @input="applyFilters"
+        >
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">원</span>
+      </div>
+
+      <div class="relative">
+        <input
+          v-model.number="filters.maxAmount"
+          type="text"
+          placeholder="최대금액"
+          class="w-full h-12 pl-4 pr-16 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          @input="applyFilters"
+        >
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">원</span>
+      </div>
     </div>
 
-    <!-- 에러 메시지 -->
-    <div v-else-if="financeStore.error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-      {{ financeStore.error }}
+    <!-- 정렬 옵션 -->
+    <div class="flex justify-end">
+      <div class="relative w-48">
+        <select
+          v-model="sortBy"
+          class="w-full h-10 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none text-gray-900 text-sm"
+          @change="applyFilters"
+        >
+          <option value="interestRate">금리순</option>
+          <option value="bankName">은행명순</option>
+          <option value="period">가입기간순</option>
+          <option value="amount">가입금액순</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
     </div>
 
-    <!-- 상품 목록 -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- 활성화된 필터 태그 -->
+    <div class="flex flex-wrap gap-2">
       <div
-        v-for="product in filteredProducts"
-        :key="product.id"
-        class="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+        v-for="(value, key) in activeFilters"
+        :key="key"
+        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm"
       >
-        <div class="flex justify-between items-start">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ product.name }}</h3>
-            <p class="text-sm text-gray-600">{{ product.bank_name }}</p>
-          </div>
-          <div class="text-right">
-            <p class="text-xl font-bold text-blue-600">{{ product.interest_rate }}%</p>
-            <p class="text-sm text-gray-500">{{ product.period }}개월</p>
-          </div>
-        </div>
-        <div class="mt-4 flex justify-between items-center">
-          <p class="text-sm text-gray-600">
-            최소금액: {{ formatAmount(product.min_amount) }}원
-          </p>
-          <a
-            :href="product.link"
-            target="_blank"
-            class="text-blue-500 hover:text-blue-700 text-sm"
-          >
-            상세보기 →
-          </a>
-        </div>
+        <span>{{ getFilterLabel(key, value) }}</span>
+        <button 
+          @click="removeFilter(key)" 
+          class="ml-2 p-0.5 rounded-full hover:bg-blue-100"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useFinanceStore } from '@/stores/finance.js'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useDebounce, useSearchHistory, useQueryParams, sortFunctions } from '../utils/search'
 
-const financeStore = useFinanceStore()
+const router = useRouter()
+const { updateQueryParams, getQueryParams } = useQueryParams(router)
+const { getHistory, addToHistory, clearHistory } = useSearchHistory()
 
-const productType = ref('deposit')
-const searchBank = ref('')
-const minRate = ref(null)
-const products = ref([])
+// 상태 관리
+const searchTerm = ref('')
+const showHistory = ref(false)
+const searchHistory = ref(getHistory())
+const sortBy = ref('interestRate')
+let debounceTimeout = null
 
-// 상품 목록 필터링
-const filteredProducts = computed(() => {
-  return products.value.filter(product => {
-    const bankMatch = searchBank.value === '' || 
-      product.bank_name.toLowerCase().includes(searchBank.value.toLowerCase())
-    const rateMatch = !minRate.value || product.interest_rate >= minRate.value
-    return bankMatch && rateMatch
-  })
+const filters = ref({
+  bank: '',
+  period: '',
+  minAmount: '',
+  maxAmount: ''
 })
 
-// 금액 포맷팅
-const formatAmount = (amount) => {
-  return amount.toLocaleString('ko-KR')
-}
+// 은행 목록
+const banks = [
+  { code: 'KB', name: '국민은행' },
+  { code: 'SH', name: '신한은행' },
+  { code: 'WR', name: '우리은행' },
+  { code: 'NH', name: '농협은행' },
+  { code: 'IBK', name: '기업은행' }
+]
 
-// 상품 데이터 로드
-const loadProducts = async () => {
-  products.value = await financeStore.fetchProducts(productType.value)
-}
-
-// 상품 유형 변경 시 데이터 다시 로드
-watch(productType, () => {
-  loadProducts()
+// 활성화된 필터 계산
+const activeFilters = computed(() => {
+  return Object.entries(filters.value).reduce((acc, [key, value]) => {
+    if (value && key !== 'productType') acc[key] = value
+    return acc
+  }, {})
 })
 
+// 필터 라벨 가져오기
+const getFilterLabel = (key, value) => {
+  switch (key) {
+    case 'bank':
+      return `${banks.find(b => b.code === value)?.name}`
+    case 'period':
+      return `${value}개월`
+    case 'minAmount':
+      return `최소 ${Number(value).toLocaleString()}원`
+    case 'maxAmount':
+      return `최대 ${Number(value).toLocaleString()}원`
+    default:
+      return value
+  }
+}
+
+// 검색어 처리
+const handleSearch = async () => {
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout)
+  }
+
+  debounceTimeout = setTimeout(async () => {
+    if (searchTerm.value.trim()) {
+      addToHistory(searchTerm.value)
+    }
+    
+    emit('search', { 
+      term: searchTerm.value, 
+      filters: filters.value, 
+      sortBy: sortBy.value 
+    })
+  }, 500)
+}
+
+// 필터 적용
+const applyFilters = () => {
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout)
+  }
+
+  debounceTimeout = setTimeout(() => {
+    emit('search', {
+      term: searchTerm.value,
+      filters: filters.value,
+      sortBy: sortBy.value
+    })
+  }, 500)
+}
+
+// 검색어 선택
+const selectSearchTerm = (term) => {
+  searchTerm.value = term
+  showHistory.value = false
+  handleSearch()
+}
+
+// 검색어 지우기
+const clearSearch = () => {
+  searchTerm.value = ''
+  emit('search', { term: '', filters: filters.value, sortBy: sortBy.value })
+}
+
+// 검색 기록 관리
+const clearSearchHistory = () => {
+  clearHistory()
+  searchHistory.value = []
+}
+
+const removeFromHistory = (term) => {
+  searchHistory.value = searchHistory.value.filter(t => t !== term)
+  localStorage.setItem('search_history', JSON.stringify(searchHistory.value))
+}
+
+// 필터 제거
+const removeFilter = (key) => {
+  filters.value[key] = ''
+  applyFilters()
+}
+
+// URL 쿼리 파라미터와 동기화 (초기 로드시에만)
 onMounted(() => {
-  loadProducts()
+  const query = getQueryParams()
+  if (query.q) searchTerm.value = query.q
+  if (query.bank) filters.value.bank = query.bank
+  if (query.period) filters.value.period = query.period
+  if (query.minAmount) filters.value.minAmount = query.minAmount
+  if (query.maxAmount) filters.value.maxAmount = query.maxAmount
+  if (query.sort) sortBy.value = query.sort
+
+  // 초기 검색 실행
+  handleSearch()
+
+  // 클릭 이벤트 리스너 추가
+  document.addEventListener('click', handleClickOutside)
 })
-</script> 
+
+// 이벤트 정의
+const emit = defineEmits(['search'])
+
+// 클릭 이벤트 감지하여 히스토리 숨기기
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.search-container')) {
+    showHistory.value = false
+  }
+}
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout)
+  }
+})
+</script>
+
+<style scoped>
+.search-container {
+  @apply w-full;
+}
+
+/* 스크롤바 스타일링 */
+.max-h-60 {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+.max-h-60::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-60::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+.max-h-60::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 3px;
+}
+</style> 
