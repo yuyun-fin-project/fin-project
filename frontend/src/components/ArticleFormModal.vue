@@ -9,7 +9,8 @@
           <input
             v-model="form.title"
             type="text"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="제목을 입력하세요"
+            class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
             required
           >
         </div>
@@ -18,8 +19,8 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">내용</label>
           <textarea
             v-model="form.content"
-            rows="6"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="내용을 입력하세요"
+            class="w-full h-48 px-4 py-2 mb-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
             required
           ></textarea>
         </div>

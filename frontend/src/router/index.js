@@ -9,6 +9,7 @@ import CommunityView from '../pages/CommunityView.vue'
 import HomeView from '../views/HomeView.vue'
 import StockSearchView from '../views/StockSearchView.vue'
 import CommunityPage from '@/views/CommunityPage.vue'
+import MyPage from '@/views/MyPage.vue'
 
 const routes = [
   { 
@@ -57,6 +58,12 @@ const routes = [
     path: '/stock-search',
     name: 'stock-search',
     component: StockSearchView
+  },
+  {
+    path: '/mypage',
+    name: 'mypage',
+    component: MyPage,
+    meta: { requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*',
