@@ -64,8 +64,10 @@ def google_callback(request):
     # 사용자 생성 또는 로그인
     user, created = User.objects.get_or_create(
         useremail=email,
-        username=name,
-        nickname=nickname 
+        defaults={
+            "username" : name,
+            "nickname" : nickname,
+        },
     )
     
     refresh_token = RefreshToken.for_user(user)
@@ -138,8 +140,8 @@ def kakao_callback(request):
     user, created = User.objects.get_or_create(
         useremail=email,
         defaults={
-            username=name,
-            nickname=nickname,
+            "username" : name,
+            "nickname" : nickname,
         },
     )
 
