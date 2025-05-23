@@ -28,13 +28,19 @@ def article_get_or_create(request):
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def article_detail(request, article_pk):
     article = get_object_or_404(Article, pk=article_pk)
+    
     if request.method == 'GET':
         serializer = ArticleSerializer(article)
         return Response(serializer.data)
     
-    elif request.method == 'PUT':
+    # 작성자 권한 체크
+    if request.user != article.user:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'PUT':
         serializer = ArticleSerializer(article, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()

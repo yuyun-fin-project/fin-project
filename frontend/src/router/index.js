@@ -8,6 +8,7 @@ import MyDataView from '../pages/MyDataView.vue'
 import CommunityView from '../pages/CommunityView.vue'
 import HomeView from '../views/HomeView.vue'
 import StockSearchView from '../views/StockSearchView.vue'
+import CommunityPage from '@/views/CommunityPage.vue'
 
 const routes = [
   { 
@@ -48,9 +49,9 @@ const routes = [
   },
   {
     path: '/community',
-    name: 'Community',
-    component: () => import('../pages/CommunityView.vue'),
-    meta: { keepAlive: true }
+    name: 'community',
+    component: CommunityPage,
+    meta: { requiresAuth: true }
   },
   {
     path: '/stock-search',
