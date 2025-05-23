@@ -137,8 +137,10 @@ def kakao_callback(request):
     
     user, created = User.objects.get_or_create(
         useremail=email,
-        username=name,
-        nickname=nickname 
+        defaults={
+            username=name,
+            nickname=nickname,
+        },
     )
 
     refresh_token = RefreshToken.for_user(user)
@@ -166,3 +168,9 @@ def logout(request):
         return Response(status=205)
     except Exception:
         return Response(status=400)
+
+@api_view(['GET'])
+def profile(request, user_id):
+    user = get_object_or_404(get_user_model(), pk=user_id)
+    serializer = UserSerializer(user)
+    return Response(serializer.data)

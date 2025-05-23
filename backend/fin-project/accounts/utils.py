@@ -112,7 +112,9 @@ def get_kakao_user_info(access_token):
     headers = {"Authorization": f"Bearer {access_token}"}
     user_response = requests.get(user_info_url, headers=headers)
     user_info = user_response.json()
-
+    print('=========================================================')
+    print(user_info)
+    print('=========================================================')
     kakao_id = user_info.get("id")
     kakao_account = user_info.get("kakao_account", {})
     email = kakao_account.get("email", f"{kakao_id}@kakao.com")
