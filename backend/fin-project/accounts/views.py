@@ -71,7 +71,7 @@ def google_callback(request):
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
 
-    response = redirect(f"http://localhost:5713/login-success?access={access_token}")
+    response = redirect(f"http://localhost:5173/login-success?access={access_token}")
     response.set_cookie(
         key='refresh_token',
         value=str(refresh_token),
@@ -144,7 +144,7 @@ def kakao_callback(request):
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
 
-    response = redirect(f"http://localhost:5713/login-success?access={access_token}")
+    response = redirect(f"http://localhost:5173/login-success?access={access_token}")
     response.set_cookie(
         key='refresh_token',
         value=str(refresh_token),
@@ -154,3 +154,15 @@ def kakao_callback(request):
         max_age=60 * 60 * 24 * 14
     )
     return response
+
+
+# 로그아웃
+@api_view(['POST'])
+def logout(request):
+    try:
+        refresh_token = request.data["refresh_token"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(status=205)
+    except Exception:
+        return Response(status=400)
