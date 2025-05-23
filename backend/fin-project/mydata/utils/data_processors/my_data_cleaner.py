@@ -1,5 +1,5 @@
 from mydata.models import Card
-from .serializers import CardSerializer
+# from .serializers import CardSerializer
 
 # 응답 형식
 ''' 

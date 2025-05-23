@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from django.shortcuts import redirect
 import os
 import requests
 import random
@@ -105,3 +106,17 @@ def get_user_info(access_token):
     
     return email, name, nickname
 
+
+def get_kakao_user_info(access_token):
+    user_info_url = "https://kapi.kakao.com/v2/user/me"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    user_response = requests.get(user_info_url, headers=headers)
+    user_info = user_response.json()
+
+    kakao_id = user_info.get("id")
+    kakao_account = user_info.get("kakao_account", {})
+    email = kakao_account.get("email", f"{kakao_id}@kakao.com")
+    name = kakao_account.get("profile", {}).get("nickname", "kakao_user")
+    nickname = random_nickname()
+    
+    return email, name, nickname

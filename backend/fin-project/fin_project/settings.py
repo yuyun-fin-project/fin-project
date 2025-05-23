@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-# SITE_ID = 1
+SITE_ID = 1
 
 # REST_FRAMEWORK = {
 #     # Authentication
@@ -153,5 +153,3 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
-
-
