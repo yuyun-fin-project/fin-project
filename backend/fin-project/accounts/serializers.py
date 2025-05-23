@@ -1,8 +1,16 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+from rest_framework import serializers
+from .models import CustomUser
+from articles.serializers import ArticleSerializer, CommentSerializer
+from django.contrib.auth import get_user_model
+
+# articles/models 안의 모델
 
 
-class User(AbstractUser):
-    username = models.CharField(max_length=10)
-    nickname = models.CharField(max_length=30)
-    useremail = models.EmailField(max_length=254)
+class UserSerializer(serializers.ModelSerializer):
+    
+    articles = ArticleSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'nickname', 'username', 'useremail', 'articles', 'comments']

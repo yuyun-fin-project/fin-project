@@ -6,13 +6,34 @@
       <router-link to="/recommend" active-class="active">추천</router-link>
       <router-link to="/community" active-class="active">커뮤니티</router-link>
       <router-link to="/mydata" active-class="active">마이데이터</router-link>
-      <router-link to="/login" class="login-btn">로그인</router-link>
+      
+      <!-- 로그인 상태에 따른 조건부 렌더링 -->
+      <template v-if="isAuthenticated">
+        <router-link to="/mypage" class="mypage-btn">마이페이지</router-link>
+        <button @click="handleLogout" class="logout-btn">로그아웃</button>
+      </template>
+      <router-link v-else to="/login" class="login-btn">로그인</router-link>
     </nav>
   </header>
 </template>
 
 <script setup lang="ts">
-// 불필요한 라우터 메서드 제거
+import { useAuthStore } from '../stores/auth'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const { isAuthenticated } = storeToRefs(authStore)
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('로그아웃 실패:', error)
+  }
+}
 </script>
 
 <style scoped>
@@ -25,8 +46,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0rem;
-  /* background-color: #ffffff; */
-  /* box-shadow: 0 2px 10px rgba(0,0,0,0.05); */
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
 }
 
 .logo {
@@ -61,16 +82,33 @@
   font-weight: 600;
 }
 
-.login-btn {
+.login-btn, .logout-btn {
   background-color: #3182f6;
   color: white !important;
   padding: 0.5rem 1.5rem;
   border-radius: 0.75rem;
   border: none;
   font-weight: 600 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
 }
 
-.login-btn:hover {
+.login-btn:hover, .logout-btn:hover {
   background-color: #1e6ee9;
+}
+
+.mypage-btn {
+  background-color: transparent;
+  color: #3182f6 !important;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid #3182f6;
+  font-weight: 600 !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.mypage-btn:hover {
+  background-color: #3182f6;
+  color: white !important;
 }
 </style>
