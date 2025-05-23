@@ -1,15 +1,17 @@
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from dotenv import load_dotenv
 import os
 import urllib.parse
 import requests
 from .utils import get_access_token, get_user_info, get_kakao_user_info
+from .serializers import UserSerializer
 
 # Create your views here.
 # 환경변수 로드
@@ -172,7 +174,11 @@ def logout(request):
         return Response(status=400)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def profile(request, user_id):
-    user = get_object_or_404(get_user_model(), pk=user_id)
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+    try:
+        user = get_object_or_404(get_user_model(), pk=user_id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)

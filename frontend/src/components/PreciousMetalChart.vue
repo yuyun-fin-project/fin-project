@@ -99,9 +99,8 @@ const initChart = () => {
   if (!chartContainer.value) return
   
   try {
-    if (chart.value) {
+    if (chart.value && !chart.value.isDisposed()) {
       chart.value.dispose()
-      chart.value = null
     }
     
     chart.value = echarts.init(chartContainer.value)
@@ -137,13 +136,23 @@ const initChart = () => {
         axisLabel: {
           margin: 16,
           formatter: (value) => `${value.toLocaleString()}`
-        }
+        },
+        scale: true
       },
       series: [
         {
+          name: selectedAsset.value === 'gold' ? '금' : '은',
           type: 'line',
           data: [],
-          smooth: true
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: {
+            width: 2
+          },
+          itemStyle: {
+            color: selectedAsset.value === 'gold' ? '#F59E0B' : '#94A3B8'
+          }
         }
       ]
     }
@@ -157,9 +166,8 @@ const initChart = () => {
 
 // 차트 업데이트
 const updateChart = () => {
-  if (!chart.value) {
-    console.warn('Chart not initialized')
-    return
+  if (!chart.value || chart.value.isDisposed()) {
+    initChart()
   }
 
   if (!priceData.value[selectedAsset.value]?.length) {
@@ -182,151 +190,23 @@ const updateChart = () => {
       return
     }
 
-    // 최저가와 최고가 계산
-    const prices = filteredData.map(item => item.close)
-    const minPrice = Math.min(...prices)
-    const maxPrice = Math.max(...prices)
-    const priceDiff = maxPrice - minPrice
-    
-    // y축 범위 설정 (여유 공간 10% 추가)
-    const yAxisMin = Math.floor(minPrice - (priceDiff * 0.1))
-    const yAxisMax = Math.ceil(maxPrice + (priceDiff * 0.1))
+    // 데이터 포맷팅
+    const formattedData = filteredData.map(item => [
+      new Date(item.date).getTime(),
+      item.close
+    ])
 
     const option = {
-      grid: {
-        left: '5%',
-        right: '5%',
-        bottom: '15%',
-        top: '5%',
-        containLabel: true
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
-          animation: true,
-          label: {
-            backgroundColor: '#6a7985'
-          }
-        },
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderColor: '#e5e7eb',
-        borderWidth: 1,
-        textStyle: {
-          color: '#374151'
-        },
-        padding: [8, 12],
-        formatter: (params) => {
-          const date = new Date(params[0].data[0]).toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          })
-          const price = params[0].data[1].toLocaleString()
-          const color = selectedAsset.value === 'gold' ? '#F59E0B' : '#94A3B8'
-          
-          return `
-            <div class="font-medium">
-              <span style="color: #6B7280">${date}</span><br/>
-              <span style="color: ${color}; font-size: 1.1em">
-                ${selectedAsset.value === 'gold' ? '금' : '은'} 시세: 
-                <span style="font-weight: 600">${price}원/g</span>
-              </span>
-            </div>
-          `
+      series: [{
+        name: selectedAsset.value === 'gold' ? '금' : '은',
+        data: formattedData,
+        itemStyle: {
+          color: selectedAsset.value === 'gold' ? '#F59E0B' : '#94A3B8'
         }
-      },
-      xAxis: {
-        type: 'time',
-        boundaryGap: false,
-        min: startDateTime.getTime(),
-        max: endDateTime.getTime(),
-        axisLabel: {
-          formatter: (value) => {
-            const date = new Date(value)
-            return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`
-          },
-          color: '#6B7280'
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e5e7eb'
-          }
-        },
-        splitLine: {
-          show: true,
-          lineStyle: {
-            color: '#f3f4f6',
-            type: 'dashed'
-          }
-        }
-      },
-      yAxis: {
-        type: 'value',
-        name: '가격 (원/g)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        nameTextStyle: {
-          color: '#6B7280',
-          padding: [0, 0, 20, 0]
-        },
-        min: yAxisMin,
-        max: yAxisMax,
-        axisLabel: {
-          formatter: (value) => `${value.toLocaleString()}`,
-          color: '#6B7280'
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e5e7eb'
-          }
-        },
-        splitLine: {
-          show: true,
-          lineStyle: {
-            color: '#f3f4f6',
-            type: 'dashed'
-          }
-        }
-      },
-      series: [
-        {
-          type: 'line',
-          smooth: true,
-          symbol: 'circle',
-          symbolSize: 8,
-          showSymbol: false,
-          emphasis: {
-            scale: true,
-            showSymbol: true
-          },
-          data: filteredData.map(item => [
-            new Date(item.date).getTime(),
-            item.close
-          ]),
-          itemStyle: {
-            color: selectedAsset.value === 'gold' ? '#F59E0B' : '#94A3B8',
-            borderWidth: 2
-          },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              {
-                offset: 0,
-                color: selectedAsset.value === 'gold' 
-                  ? 'rgba(245, 158, 11, 0.3)' 
-                  : 'rgba(148, 163, 184, 0.3)'
-              },
-              {
-                offset: 1,
-                color: 'rgba(255, 255, 255, 0.1)'
-              }
-            ])
-          }
-        }
-      ]
+      }]
     }
 
-    chart.value.setOption(option, true)
+    chart.value.setOption(option)
   } catch (error) {
     console.error('Error updating chart:', error)
   }
