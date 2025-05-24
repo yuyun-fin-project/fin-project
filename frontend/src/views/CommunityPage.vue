@@ -21,6 +21,32 @@
         </button>
       </div>
 
+      <!-- 검색 바 -->
+      <div class="mb-6">
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="게시글 제목 검색..."
+            class="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+            @input="handleSearch"
+          />
+          <svg
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
       <!-- 게시글 목록 -->
       <div 
         v-motion
@@ -30,12 +56,47 @@
         class="grid gap-4"
       >
         <article-card
-          v-for="article in articles"
+          v-for="article in paginatedArticles"
           :key="article.id"
           :article="article"
           @click="openDetailModal(article)"
           class="transform hover:scale-[1.02] transition-transform duration-200"
         />
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div v-if="filteredArticles.length > itemsPerPage" class="mt-8 flex justify-center">
+        <nav class="flex items-center space-x-2">
+          <button
+            :disabled="currentPage === 1"
+            @click="handlePageChange(currentPage - 1)"
+            class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-blue-50 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            이전
+          </button>
+          <div class="flex space-x-2">
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              @click="handlePageChange(page)"
+              :class="[
+                'px-4 py-2 rounded-lg transition-colors duration-200',
+                currentPage === page
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'border border-gray-300 text-gray-700 hover:bg-blue-50'
+              ]"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <button
+            :disabled="currentPage === totalPages"
+            @click="handlePageChange(currentPage + 1)"
+            class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-blue-50 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            다음
+          </button>
+        </nav>
       </div>
 
       <!-- 글쓰기 모달 -->
@@ -58,17 +119,61 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import ArticleCard from '@/components/ArticleCard.vue'
 import ArticleFormModal from '@/components/ArticleFormModal.vue'
 import ArticleDetailModal from '@/components/ArticleDetailModal.vue'
 import { articleService } from '@/services/articleService'
+import { debounce } from 'lodash'
 
 const auth = useAuthStore()
 const articles = ref([])
 const isCreateModalOpen = ref(false)
 const selectedArticle = ref(null)
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+// 페이지 변경 시 스크롤 처리
+const handlePageChange = (newPage) => {
+  currentPage.value = newPage
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+// 검색어에 따른 필터링
+const filteredArticles = computed(() => {
+  if (!searchQuery.value) return articles.value
+  const query = searchQuery.value.toLowerCase()
+  return articles.value.filter(article => 
+    article.title.toLowerCase().includes(query)
+  )
+})
+
+// 페이지네이션 계산
+const totalPages = computed(() => 
+  Math.ceil(filteredArticles.value.length / itemsPerPage)
+)
+
+// 현재 페이지의 게시글
+const paginatedArticles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredArticles.value.slice(start, end)
+})
+
+// 검색어 변경 시 첫 페이지로 이동
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+// 검색 처리 (디바운스 적용)
+const handleSearch = debounce(() => {
+  currentPage.value = 1
+}, 300)
 
 // 게시글 목록 조회
 const fetchArticles = async () => {
