@@ -55,7 +55,7 @@ def article_detail(request, article_pk):
 
 # 조건 별로 검색하는 함수 (query 기반)
 @api_view(['GET'])
-def artist_condition_list(request):
+def article_search(request):
     query_param = request.query_params.get('is_group', False)
     if query_param:
         if query_param == 'True' or query_param == 'true':
@@ -66,3 +66,4 @@ def artist_condition_list(request):
         articles = Article.objects.all()
     
     serializer = ArticleSerializer(artists, many=True)
+

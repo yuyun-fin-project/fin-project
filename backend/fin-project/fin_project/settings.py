@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'articles',
     'accounts',
+    'finance_recommend',
     'mydata',
     'finance_recommend',
     'rest_framework',
