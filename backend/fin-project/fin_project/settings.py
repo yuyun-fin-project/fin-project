@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'accounts',
     'finance_recommend',
     'mydata',
-    'finance_recommend',
     'rest_framework',
     'rest_framework.authtoken',
     # 'dj_rest_auth',

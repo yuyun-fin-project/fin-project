@@ -18,4 +18,5 @@ dependencies = [
     "rest-framework-simplejwt>=0.0.2",
     "urllib3>=2.4.0",
     "pyjwt>=2.8.0 ",
+    "certifi>=2025.4.26",
 ]
