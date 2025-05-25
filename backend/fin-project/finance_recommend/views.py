@@ -15,6 +15,7 @@ from rest_framework import status
 
 from .models import Product, Option, Gold, Oil, Carbon, SpotProductBookmark, SpotProduct, ProductBookmark
 from .serializers import ProductSerializer, OptionSerializer, GoldSerializer, OilSerializer, CarbonSerializer
+from .utils.cosine_similarity import recommend_products
 
 from datetime import datetime, timedelta
 from pprint import pprint
@@ -188,4 +189,37 @@ def product_bookmark_list(request):
         for b in bookmarks
     ]
     return Response(data, status=status.HTTP_200_OK)
-    
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recommend_view(request):
+    # 예: GET 파라미터로 입력 받음
+    preferred_type = request.GET.get("preferred_type", "D")
+    join_deny = int(request.GET.get("join_deny", 1))
+    save_trm = int(request.GET.get("save_trm", 12))
+    target_rate = float(request.GET.get("target_rate", 0.03))
+    target_rate2 = float(request.GET.get("target_rate2", 0.04))
+
+    user_input = {
+        "preferred_type": preferred_type,
+        "join_deny": join_deny,
+        "save_trm": save_trm,
+        "target_rate": target_rate,
+        "target_rate2": target_rate2
+    }
+
+    recommended = recommend_products(user_input)
+
+    # JSON으로 상품명, 금융사명, 유사도 출력
+    data = [
+        {
+            "상품명": r["product"].fin_prdt_nm,
+            "금융사": r["product"].kor_co_nm,
+            "유사도": round(r["similarity"], 4)
+        } for r in recommended
+    ]
+
+    return Response(data)
+
+

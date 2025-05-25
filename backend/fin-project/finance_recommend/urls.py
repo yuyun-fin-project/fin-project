@@ -9,4 +9,5 @@ urlpatterns = [
     path('bookmark/spot/<int:spot_product_id>/', views.spot_bookmark, name="spot_bookmark"),
     path('bookmark/spot/', views.spot_bookmark_list, name="spot_bookmarks"),
     path('', views.get_prd, name="prd_api"),
+    path('recommend/', views.recommend_view, name="recommend_view"),
 ]
