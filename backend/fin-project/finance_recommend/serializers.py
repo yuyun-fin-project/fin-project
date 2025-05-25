@@ -25,6 +25,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'etc_note': validated_data.get('etc_note'),
             'created_at': validated_data.get('created_at'),
             'updated_at': validated_data.get('updated_at'),
+            'kor_co_nm': validated_data.get('kor_co_nm'),
             }
         )
         if not created:
@@ -40,6 +41,7 @@ class ProductSerializer(serializers.ModelSerializer):
             instance.mtrt_int = validated_data.get('mtrt_int', instance.mtrt_int)
             instance.spcl_cnd = validated_data.get('spcl_cnd', instance.spcl_cnd)
             instance.etc_note = validated_data.get('etc_note', instance.etc_note)
+            instance.kor_co_nm = validated_data.get('kor_co_nm', instance.kor_co_nm)
             instance.save()
         return instance
 
