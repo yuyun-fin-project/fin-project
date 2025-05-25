@@ -28,3 +28,41 @@ def api_call():
     saving_response = requests.get(URL, params=params).json()
     
     return deposit_response, saving_response
+
+
+def api_call_all_pages():
+    BASE_URL = 'http://finlife.fss.or.kr/finlifeapi/'
+    api_key = os.getenv("API_KEY")
+    topFinGrpNo = '020000'
+
+    deposit_all = []
+    page = 1
+    while True:
+        params = {
+            'auth': api_key,
+            'topFinGrpNo': topFinGrpNo,
+            'pageNo': page
+        }
+        response = requests.get(BASE_URL + 'depositProductsSearch.json', params=params).json()
+        base_list = response.get('result', {}).get('baseList', [])
+        if not base_list:
+            break
+        deposit_all.extend(base_list)
+        page += 1
+
+    saving_all = []
+    page = 1
+    while True:
+        params = {
+            'auth': api_key,
+            'topFinGrpNo': topFinGrpNo,
+            'pageNo': page
+        }
+        response = requests.get(BASE_URL + 'savingProductsSearch.json', params=params).json()
+        base_list = response.get('result', {}).get('baseList', [])
+        if not base_list:
+            break
+        saving_all.extend(base_list)
+        page += 1
+
+    return deposit_all, saving_all

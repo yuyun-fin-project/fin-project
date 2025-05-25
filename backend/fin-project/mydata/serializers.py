@@ -2,11 +2,11 @@ from rest_framework import serializers
 from .models import Card
 
 class CardSerializer(serializers.ModelSerializer):
-    masked_card_number = serializers.CharField(source='card_num')
-    card_type = serializers.CharField(source='card_type')
-    owner_type = serializers.CharField(source='owner_type')
-    org_code = serializers.CharField(source='org_code')
+    card_num = serializers.CharField()
+    card_type = serializers.CharField()
+    card_member = serializers.CharField()
+    org_code = serializers.CharField()
     
     class Meta:
         model = Card
-        fields = ['card_id', 'masked_card_number', 'card_name', 'card_type', 'owner_type', 'org_code'] # 메타데이터 제외
+        fields = ['card_id', 'card_num', 'card_name', 'card_type', 'card_member', 'org_code'] # 메타데이터 제외

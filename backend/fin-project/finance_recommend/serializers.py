@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Product, Option, Gold, Oil, Carbon
-
+from .utils.cosine_similarity import recommend_products
 
 class ProductSerializer(serializers.ModelSerializer):
 
@@ -243,3 +243,10 @@ class CarbonSerializer(serializers.ModelSerializer):
                 setattr(instance, field, validated_data.get(field, getattr(instance, field)))
             instance.save()
         return instance
+
+
+class RecommendInputSerializer(serializers.Serializer):
+    product_type = serializers.ChoiceField(choices=["D", "S"], default="D")
+    save_trm = serializers.IntegerField(min_value=1, max_value=36, default=12)
+    monthly_saving = serializers.IntegerField(min_value=1, max_value=1000, default=50)
+    risk_level = serializers.ChoiceField(choices=["low", "medium", "high"], default="low")

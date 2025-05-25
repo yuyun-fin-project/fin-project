@@ -15,7 +15,9 @@ import os
 @api_view(['POST'])
 def get_mydata(request):
     card_list = get_card_list(request)
-    card_list, jwt_token = my_data_cleaner(card_list)
+    print(card_list)
+    card_list, jwt_token = data_preprocessing(card_list)
+    print(card_list)
     for card in card_list:
         card_approval = get_card_approval(jwt_token, card['card_id'])
     

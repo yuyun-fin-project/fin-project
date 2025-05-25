@@ -15,10 +15,10 @@ class Card(models.Model):
     )
     
     card_id = models.CharField(max_length=100, primary_key=True, help_text="카드 식별자")
-    masked_card_number = models.CharField(max_length=20, help_text="마스킹된 카드번호")
+    card_num = models.CharField(max_length=20, help_text="카드번호")
     card_name = models.CharField(max_length=100, help_text="카드상품명")
     card_type = models.CharField(max_length=20, choices=CARD_TYPE_CHOICES, help_text="카드구분")
-    owner_type = models.CharField(max_length=10, choices=OWNER_TYPE_CHOICES, help_text="본인/가족 구분")
+    card_member = models.CharField(max_length=10, choices=OWNER_TYPE_CHOICES, help_text="본인/가족 구분")
     org_code = models.CharField(max_length=20, help_text="기관명")
     
     # 메타데이터
@@ -26,7 +26,7 @@ class Card(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"{self.card_name} ({self.masked_card_number})"
+        return f"{self.card_name} ({self.card_num})"
     
     class Meta:
         verbose_name = "카드"

@@ -4,13 +4,14 @@ from rest_framework.decorators import api_view
 from django.http import JsonResponse
 
 BASE_URL = 'http://127.0.0.1:8080'
+# BASE_URL = 'http://13.125.217.104/'
 
-def get_card_list(json_data):
+def get_card_list(request):
     URL = BASE_URL + '/generate/'
     
     data = {
-        'username': json_data['username'],
-        'useremail': json_data['useremail'],
+        'username' : request.data.get('username'),
+        'useremail' : request.data.get('useremail'),
     }
     
     try:
@@ -55,8 +56,12 @@ def get_card_list(json_data):
 
 
 def get_card_approval(jwt_token, card_id):
-    URL = BASE_URL + f'/card/{card_id}/card_approval'
-    
+    URL = BASE_URL + f'/v1/card/cards/{card_id}/approval-domestic'
+    params = {
+        'from_date': '20250101',
+        'to_date': '20250430',
+        'limit': 10,
+    }
     headers = {
         "Authorization": f"Bearer {jwt_token}",
         "Content-Type": "application/json"
@@ -64,7 +69,7 @@ def get_card_approval(jwt_token, card_id):
     
     try:
         # API 요청 보내기
-        response = requests.get(URL, headers=headers)
+        response = requests.get(URL, headers=headers, params=params)
         
         # 디버깅을 위한 로그 추가
         print(f"응답 상태 코드: {response.status_code}")

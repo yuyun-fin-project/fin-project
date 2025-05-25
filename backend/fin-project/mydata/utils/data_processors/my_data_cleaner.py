@@ -1,5 +1,5 @@
 from mydata.models import Card
-# from .serializers import CardSerializer
+from mydata.serializers import CardSerializer
 
 # 응답 형식
 ''' 
@@ -25,7 +25,7 @@ from mydata.models import Card
 # 모델 필드
 '''
     card_id = models.CharField(max_length=100, primary_key=True, help_text="카드 식별자")
-    masked_card_number = models.CharField(max_length=20, help_text="마스킹된 카드번호")
+    card_num = models.CharField(max_length=20, help_text="카드번호")
     card_name = models.CharField(max_length=100, help_text="카드상품명")
     card_type = models.CharField(max_length=20, choices=CARD_TYPE_CHOICES, help_text="카드구분")
     owner_type = models.CharField(max_length=10, choices=OWNER_TYPE_CHOICES, help_text="본인/가족 구분")
@@ -46,7 +46,7 @@ def data_preprocessing(data):
             if key in card_field_names:
                 card_temp[key] = value
         cleaned_card_list.append(card_temp)
-    
+    print(cleaned_card_list)
     # 카드 정보 저장
     serializer = CardSerializer(data=cleaned_card_list, many=True)
     if serializer.is_valid():

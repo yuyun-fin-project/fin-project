@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from .utils.spot.spot_api import spot_api
 from .utils.prd.api_call import api_call as prd_api
+from .utils.prd.api_call import api_call_all_pages as prd_api_all_pages
 from .utils.prd.data_preprocessing import data_preprocessing as preprocess_prd_data
 from .utils.spot.preprocessing import data_preprocessing as preprocess_spot_data
 from .utils.create_spotproduct import create_all_spot_products
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .models import Product, Option, Gold, Oil, Carbon, SpotProductBookmark, SpotProduct, ProductBookmark
-from .serializers import ProductSerializer, OptionSerializer, GoldSerializer, OilSerializer, CarbonSerializer
+from .serializers import ProductSerializer, OptionSerializer, GoldSerializer, OilSerializer, CarbonSerializer, RecommendInputSerializer
 from .utils.cosine_similarity import recommend_products
 
 from datetime import datetime, timedelta
@@ -194,32 +195,21 @@ def product_bookmark_list(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recommend_view(request):
-    # 예: GET 파라미터로 입력 받음
-    preferred_type = request.GET.get("preferred_type", "D")
-    join_deny = int(request.GET.get("join_deny", 1))
-    save_trm = int(request.GET.get("save_trm", 12))
-    target_rate = float(request.GET.get("target_rate", 0.03))
-    target_rate2 = float(request.GET.get("target_rate2", 0.04))
+    product_type = request.GET.get("product_type", "D")
 
-    user_input = {
-        "preferred_type": preferred_type,
-        "join_deny": join_deny,
-        "save_trm": save_trm,
-        "target_rate": target_rate,
-        "target_rate2": target_rate2
-    }
+    products = Product.objects.filter(prd_type=product_type).prefetch_related('options')
 
-    recommended = recommend_products(user_input)
+    product_rates = []
+    for product in products:
+        best_option = product.options.order_by('-intr_rate2').first()
+        rate = best_option.intr_rate2 or best_option.intr_rate or 0
+        product_rates.append({
+            "상품명": product.fin_prdt_nm,
+            "금융사": product.kor_co_nm,
+            "금융상품유형": product.prd_type,
+            "금리": rate
+        })
 
-    # JSON으로 상품명, 금융사명, 유사도 출력
-    data = [
-        {
-            "상품명": r["product"].fin_prdt_nm,
-            "금융사": r["product"].kor_co_nm,
-            "유사도": round(r["similarity"], 4)
-        } for r in recommended
-    ]
+    top_products = sorted(product_rates, key=lambda x: x["금리"], reverse=True)[:3]
 
-    return Response(data)
-
-
+    return Response(top_products)
