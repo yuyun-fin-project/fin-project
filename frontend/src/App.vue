@@ -77,15 +77,8 @@ watch(
 
 // 초기 인증 상태 확인
 onMounted(async () => {
-  if (authStore.accessToken) {
-    try {
-      // 저장된 토큰으로 사용자 정보 가져오기
-      await authStore.checkAuth();
-    } catch (error) {
-      console.error('인증 확인 실패:', error);
-      await router.push('/login');
-    }
-  }
+  // 앱 시작 시 인증 상태 체크
+  await authStore.checkAuth()
 });
 
 const beforeLeave = (el) => {

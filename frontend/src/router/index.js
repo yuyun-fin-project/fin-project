@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // 동기적으로 컴포넌트 import
 import HomePage from '../pages/HomePage.vue'
@@ -10,36 +11,37 @@ import HomeView from '../views/HomeView.vue'
 import StockSearchView from '../views/StockSearchView.vue'
 import CommunityPage from '@/views/CommunityPage.vue'
 import MyPage from '@/views/MyPage.vue'
+import DashboardView from '@/pages/DashboardView.vue'
 
 const routes = [
   { 
     path: '/', 
     name: 'Home',
-    component: () => import('../pages/HomePage.vue'),
+    component: HomePage,
     meta: { keepAlive: true }
   },
   { 
     path: '/login', 
     name: 'Login',
-    component: () => import('../pages/LoginPage.vue'),
+    component: LoginPage,
     meta: { keepAlive: true }
   },
   {
     path: '/recommend',
     name: 'Recommend',
-    component: () => import('../pages/AIView.vue'),
+    component: AIView,
     meta: { keepAlive: true }
   },
   {
     path: '/mydata',
     name: 'MyData',
-    component: () => import('../pages/MyDataView.vue'),
+    component: MyDataView,
     meta: { keepAlive: true }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../pages/DashboardView.vue'),
+    component: DashboardView,
     meta: { keepAlive: true }
   },
   {
@@ -52,7 +54,7 @@ const routes = [
     path: '/community',
     name: 'community',
     component: CommunityPage,
-    meta: { requiresAuth: true }
+    meta: { keepAlive: true }
   },
   {
     path: '/stock-search',
@@ -85,15 +87,35 @@ const router = createRouter({
 
 // 전역 네비게이션 가드
 router.beforeEach(async (to, from, next) => {
-  // 페이지 전환 시작 시 처리
-  if (from.name === 'Home') {
-    // 홈에서 다른 페이지로 이동할 때 캐시 초기화
-    const toComponent = await to.matched[0].components?.default;
-    if (toComponent) {
-      delete toComponent.__vccOpts;
+  const authStore = useAuthStore()
+  
+  // 인증이 필요한 페이지인지 확인
+  if (to.meta.requiresAuth) {
+    // 로그인 상태가 아니면 로그인 페이지로 리다이렉트
+    if (!authStore.isAuthenticated) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
     }
+    
+    // 토큰 유효성 검사
+    try {
+      await authStore.checkAuth()
+      next()
+    } catch (error) {
+      console.error('인증 확인 실패:', error)
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+    }
+  } else {
+    // 페이지 전환 시작 시 처리
+    if (from.name === 'Home') {
+      // 홈에서 다른 페이지로 이동할 때 캐시 초기화
+      const toComponent = await to.matched[0].components?.default;
+      if (toComponent) {
+        delete toComponent.__vccOpts;
+      }
+    }
+    next()
   }
-  next()
 })
 
 router.afterEach((to, from) => {

@@ -26,7 +26,7 @@ def api_call():
     }
     
     saving_response = requests.get(URL, params=params).json()
-    
+    print(saving_response)
     return deposit_response, saving_response
 
 

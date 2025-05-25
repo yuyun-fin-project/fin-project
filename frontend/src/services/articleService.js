@@ -1,10 +1,10 @@
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 const BASE_URL = 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -25,18 +25,30 @@ api.interceptors.request.use(
   }
 )
 
-export const articleService = {
-  // 사용자 정보 가져오기
-  async getUserInfo(userId) {
-    try {
-      const response = await api.get(`/accounts/profile/${userId}/`)
-      return response.data
-    } catch (error) {
-      console.error('사용자 정보 조회 실패:', error)
-      return null
-    }
-  },
+// 응답 인터셉터
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
 
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      try {
+        const authStore = useAuthStore()
+        const newToken = await authStore.refreshToken()
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api(originalRequest)
+      } catch (refreshError) {
+        return Promise.reject(refreshError)
+      }
+    }
+
+    return Promise.reject(error)
+  }
+)
+
+export const articleService = {
   // 게시글 목록 조회
   getArticles: async () => {
     try {
@@ -82,17 +94,31 @@ export const articleService = {
     }
   },
 
+  // 사용자 정보 가져오기
+  async getUserInfo(userId) {
+    try {
+      const response = await api.get(`/accounts/profile/${userId}/`)
+      return response.data
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error)
+      return {
+        nickname: '익명',
+        id: userId
+      }
+    }
+  },
+
   // 게시글 생성
   createArticle: async (articleData) => {
     try {
-      // URLSearchParams를 사용하여 form-data 형식으로 전송
-      const params = new URLSearchParams()
-      params.append('title', articleData.title)
-      params.append('content', articleData.content)
-      
-      const response = await api.post('/articles/', params, {
+      // FormData 객체 생성
+      const formData = new FormData()
+      formData.append('title', articleData.title)
+      formData.append('content', articleData.content)
+
+      const response = await api.post('/articles/', formData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'multipart/form-data'
         }
       })
       return response.data
@@ -105,14 +131,14 @@ export const articleService = {
   // 게시글 수정
   updateArticle: async (articleId, articleData) => {
     try {
-      // URLSearchParams를 사용하여 form-data 형식으로 전송
-      const params = new URLSearchParams()
-      params.append('title', articleData.title)
-      params.append('content', articleData.content)
-      
-      const response = await api.put(`/articles/${articleId}/`, params, {
+      // FormData 객체 생성
+      const formData = new FormData()
+      formData.append('title', articleData.title)
+      formData.append('content', articleData.content)
+
+      const response = await api.put(`/articles/${articleId}/`, formData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'multipart/form-data'
         }
       })
       return response.data

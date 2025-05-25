@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { authService } from '../services/authService'
+import { useRouter } from 'vue-router'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     accessToken: localStorage.getItem('access_token') || null,
-    isAuthenticated: !!localStorage.getItem('access_token'),
+    isAuthenticated: false,  // 초기값은 false로 설정
     user: null,
     refreshTokenTimeout: null
   }),
@@ -33,28 +34,41 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async checkAuth() {
-      if (!this.accessToken) {
-        throw new Error('저장된 토큰이 없습니다.');
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        this.clearAuth()
+        return false
       }
 
       try {
-        const userData = await authService.getUserInfo();
-        this.user = userData;
-        this.isAuthenticated = true;
-        this.startRefreshTokenTimer();
-        return userData;
+        // 토큰이 있으면 사용자 정보를 가져와서 유효성 검사
+        const userData = await authService.getUserInfo()
+        this.user = userData
+        this.isAuthenticated = true
+        this.startRefreshTokenTimer()
+        return true
       } catch (error) {
-        this.clearAuth();
-        throw error;
+        // 401 에러인 경우 토큰 갱신 시도
+        if (error.response?.status === 401) {
+          try {
+            await this.refreshToken()
+            return true
+          } catch (refreshError) {
+            this.clearAuth()
+            return false
+          }
+        }
+        this.clearAuth()
+        return false
       }
     },
 
     clearAuth() {
-      this.accessToken = null;
-      this.isAuthenticated = false;
-      this.user = null;
-      localStorage.removeItem('access_token');
-      this.stopRefreshTokenTimer();
+      this.accessToken = null
+      this.isAuthenticated = false
+      this.user = null
+      localStorage.removeItem('access_token')
+      this.stopRefreshTokenTimer()
     },
 
     startRefreshTokenTimer() {
@@ -110,13 +124,12 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        await authService.logout();
+        await authService.logout()
       } catch (error) {
-        console.error('로그아웃 API 호출 실패:', error);
+        console.error('로그아웃 API 호출 실패:', error)
       } finally {
         // API 호출 결과와 관계없이 로컬 상태 정리
-        this.clearAuth();
-        window.location.href = '/login';
+        this.clearAuth()
       }
     }
   },

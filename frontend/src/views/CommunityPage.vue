@@ -14,7 +14,7 @@
           커뮤니티
         </h1>
         <button 
-          @click="openCreateModal" 
+          @click="handleWriteClick" 
           class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
         >
           글쓰기
@@ -62,6 +62,59 @@
           @click="openDetailModal(article)"
           class="transform hover:scale-[1.02] transition-transform duration-200"
         />
+        
+        <!-- 게시글이 없을 때 메시지 -->
+        <div 
+          v-if="articles.length === 0" 
+          class="text-center py-12 bg-white rounded-lg shadow-sm"
+        >
+          <svg
+            class="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">게시글이 없습니다</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ auth.isAuthenticated ? '첫 번째 게시글을 작성해보세요!' : '로그인하여 첫 번째 게시글을 작성해보세요!' }}
+          </p>
+          <div class="mt-6">
+            <button
+              v-if="auth.isAuthenticated"
+              @click="handleWriteClick"
+              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg
+                class="-ml-1 mr-2 h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              글쓰기
+            </button>
+            <button
+              v-else
+              @click="handleWriteClick"
+              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              로그인하여 글쓰기
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 페이지네이션 -->
@@ -126,6 +179,7 @@ import ArticleFormModal from '@/components/ArticleFormModal.vue'
 import ArticleDetailModal from '@/components/ArticleDetailModal.vue'
 import { articleService } from '@/services/articleService'
 import { debounce } from 'lodash'
+import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
 const articles = ref([])
@@ -134,6 +188,7 @@ const selectedArticle = ref(null)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
+const router = useRouter()
 
 // 페이지 변경 시 스크롤 처리
 const handlePageChange = (newPage) => {
@@ -182,6 +237,7 @@ const fetchArticles = async () => {
     articles.value = response.results
   } catch (error) {
     console.error('게시글 목록 조회 실패:', error)
+    articles.value = [] // 에러 발생 시 빈 배열로 초기화
   }
 }
 
@@ -189,10 +245,20 @@ const fetchArticles = async () => {
 const createArticle = async (articleData) => {
   try {
     await articleService.createArticle(articleData)
-    await fetchArticles()
     closeCreateModal()
+    // 성공적으로 게시글을 생성한 후에만 목록을 새로고침
+    try {
+      const response = await articleService.getArticles()
+      articles.value = response.results || []
+    } catch (error) {
+      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
+      // 오류가 발생해도 사용자에게는 게시글이 생성되었다는 것을 알림
+      articles.value = []
+    }
   } catch (error) {
     console.error('게시글 생성 실패:', error)
+    // 게시글 생성 실패 시 사용자에게 알림
+    alert('게시글 생성에 실패했습니다. 다시 시도해주세요.')
   }
 }
 
@@ -200,10 +266,18 @@ const createArticle = async (articleData) => {
 const updateArticle = async (articleData) => {
   try {
     await articleService.updateArticle(selectedArticle.value.id, articleData)
-    await fetchArticles()
     closeDetailModal()
+    // 성공적으로 게시글을 수정한 후에만 목록을 새로고침
+    try {
+      const response = await articleService.getArticles()
+      articles.value = response.results || []
+    } catch (error) {
+      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
+      articles.value = []
+    }
   } catch (error) {
     console.error('게시글 수정 실패:', error)
+    alert('게시글 수정에 실패했습니다. 다시 시도해주세요.')
   }
 }
 
@@ -211,16 +285,36 @@ const updateArticle = async (articleData) => {
 const deleteArticle = async (articleId) => {
   try {
     await articleService.deleteArticle(articleId)
-    await fetchArticles()
     closeDetailModal()
+    // 성공적으로 게시글을 삭제한 후에만 목록을 새로고침
+    try {
+      const response = await articleService.getArticles()
+      articles.value = response.results || []
+    } catch (error) {
+      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
+      articles.value = []
+    }
   } catch (error) {
     console.error('게시글 삭제 실패:', error)
+    alert('게시글 삭제에 실패했습니다. 다시 시도해주세요.')
   }
 }
 
 // 모달 컨트롤
 const openCreateModal = () => {
   isCreateModalOpen.value = true
+}
+
+const handleWriteClick = () => {
+  if (!auth.isAuthenticated) {
+    // 현재 페이지 URL을 저장하여 로그인 후 돌아올 수 있도록 함
+    router.push({ 
+      name: 'Login', 
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
+    return
+  }
+  openCreateModal()
 }
 
 const closeCreateModal = () => {

@@ -166,7 +166,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useDebounce, useSearchHistory, useQueryParams, sortFunctions } from '../utils/search'
+import { useDebounce, useSearchHistory, useQueryParams, sortFunctions } from '../../utils/search'
 
 const router = useRouter()
 const { updateQueryParams, getQueryParams } = useQueryParams(router)

@@ -5,97 +5,190 @@
       :initial="{ opacity: 0, y: 40 }"
       :enter="{ opacity: 1, y: 0 }"
       :delay="300"
-      :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
-      class="max-w-4xl mx-auto px-4 py-12"
+      class="max-w-6xl mx-auto px-4 py-12"
     >
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-        AI 투자 추천
+        AI 금융상품 추천
       </h1>
 
-      <div v-if="!isReady" class="loading">
-        <div class="loading-spinner"></div>
+      <!-- 상품 유형 선택 -->
+      <div class="mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            v-for="type in productTypes"
+            :key="type.value"
+            @click="selectProductType(type.value)"
+            :class="[
+              'p-4 rounded-xl text-center transition-all transform hover:scale-105',
+              selectedType === type.value
+                ? 'bg-blue-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-500'
+            ]"
+          >
+            <div class="text-2xl mb-2">{{ type.icon }}</div>
+            <h3 class="font-medium">{{ type.name }}</h3>
+            <p class="text-sm opacity-80">{{ type.description }}</p>
+          </button>
+        </div>
       </div>
 
-      <div v-else>
-        <!-- 투자 성향 분석 섹션 -->
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 class="text-2xl font-semibold mb-4">나의 투자 성향</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-blue-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-600">위험 선호도</p>
-              <p class="text-xl font-bold text-blue-600">{{ store.userProfile.riskLevel }}</p>
-            </div>
-            <div class="bg-blue-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-600">투자 기간</p>
-              <p class="text-xl font-bold text-blue-600">{{ store.userProfile.period }}</p>
-            </div>
-            <div class="bg-blue-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-600">월 투자 금액</p>
-              <p class="text-xl font-bold text-blue-600">{{ store.userProfile.monthlyInvestment }}</p>
-            </div>
-          </div>
+      <!-- 추천 결과 -->
+      <div class="space-y-6">
+        <div v-if="loading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p class="text-gray-600">AI가 최적의 금융상품을 찾고 있습니다...</p>
         </div>
 
-        <!-- AI 추천 포트폴리오 -->
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 class="text-2xl font-semibold mb-6">맞춤 포트폴리오 추천</h2>
-          <div class="space-y-4">
-            <div v-for="(item, index) in store.portfolio" :key="index" 
-              class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+        <div v-else-if="error" class="bg-red-50 text-red-600 p-4 rounded-lg">
+          <p>{{ error }}</p>
+          <button
+            @click="fetchRecommendations"
+            class="mt-2 text-sm underline hover:no-underline"
+          >
+            다시 시도
+          </button>
+        </div>
+
+        <template v-else>
+          <div
+            v-for="(product, index) in recommendations"
+            :key="index"
+            v-motion
+            :initial="{ opacity: 0, x: 20 }"
+            :enter="{ opacity: 1, x: 0 }"
+            :delay="index * 100"
+            class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+          >
+            <div class="flex items-start justify-between">
               <div>
-                <h3 class="font-medium text-gray-900">{{ item.name }}</h3>
-                <p class="text-sm text-gray-500">{{ item.description }}</p>
+                <h3 class="text-xl font-semibold text-gray-900">{{ product.상품명 }}</h3>
+                <p class="text-gray-600 mt-1">{{ product.금융사 }}</p>
               </div>
               <div class="text-right">
-                <p class="font-bold text-blue-600">{{ item.percentage }}%</p>
-                <p class="text-sm text-gray-500">추천 비중</p>
+                <div class="text-2xl font-bold text-blue-600">
+                  {{ formatRate(product.금리) }}%
+                </div>
+                <div class="text-sm text-gray-500">금리</div>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">상품 유형</span>
+                <span class="font-medium text-gray-900">
+                  {{ getProductTypeName(product.금융상품유형) }}
+                </span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 투자 전략 추천 -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-          <h2 class="text-2xl font-semibold mb-4">투자 전략 제안</h2>
-          <div class="prose prose-blue">
+          <div v-if="recommendations.length === 0" class="text-center py-8 bg-gray-50 rounded-xl">
+            <svg
+              class="w-16 h-16 text-gray-400 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             <p class="text-gray-600">
-              현재 시장 상황과 고객님의 투자 성향을 분석한 결과, 안정적인 수익을 추구하는 
-              포트폴리오를 추천드립니다. 정기적인 분할 투자를 통해 시장 변동성 리스크를 
-              줄이는 것이 좋겠습니다.
+              죄송합니다. 현재 추천할 수 있는 상품이 없습니다.
             </p>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useInvestmentStore } from '../stores/investment.js';
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import { recommendService } from '@/services/recommendService'
 
-const store = useInvestmentStore();
-const isReady = ref(false);
+const auth = useAuthStore()
+const router = useRouter()
 
-// async setup
-await store.loadData();
-isReady.value = true;
+const productTypes = [
+  {
+    value: 'D',
+    name: '예금',
+    icon: '💰',
+    description: '안정적인 수익을 원하시나요?'
+  },
+  {
+    value: 'S',
+    name: '적금',
+    icon: '🏦',
+    description: '목돈 마련이 목표인가요?'
+  },
+  {
+    value: 'F',
+    name: '펀드',
+    icon: '📈',
+    description: '높은 수익을 추구하시나요?'
+  }
+]
+
+const selectedType = ref('D')
+const recommendations = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+// 상품 유형 선택
+const selectProductType = async (type) => {
+  selectedType.value = type
+  await fetchRecommendations()
+}
+
+// 추천 상품 조회
+const fetchRecommendations = async () => {
+  if (!auth.isAuthenticated) {
+    router.push({
+      name: 'Login',
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
+    return
+  }
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const data = await recommendService.getRecommendations(selectedType.value)
+    recommendations.value = data
+  } catch (err) {
+    error.value = '추천 상품을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.'
+    console.error('추천 상품 조회 실패:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 금리 포맷
+const formatRate = (rate) => {
+  return Number(rate).toFixed(2)
+}
+
+// 상품 유형 이름 가져오기
+const getProductTypeName = (type) => {
+  const productType = productTypes.find(t => t.value === type)
+  return productType ? productType.name : type
+}
+
+onMounted(() => {
+  fetchRecommendations()
+})
 </script>
 
 <style scoped>
 .ai-view {
   @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
-}
-
-.prose {
-  @apply max-w-none;
-}
-
-.loading {
-  @apply flex items-center justify-center min-h-[200px];
-}
-
-.loading-spinner {
-  @apply w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin;
 }
 </style>
