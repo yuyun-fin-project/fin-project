@@ -1,10 +1,12 @@
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.shortcuts import get_object_or_404
+from django.http import Http404
 
 from .utils.spot.spot_api import spot_api
 from .utils.prd.api_call import api_call as prd_api
-from .utils.prd.api_call import api_call_all_pages as prd_api_all_pages
+# from .utils.prd.api_call import api_call_all_pages as prd_api_all_pages
 from .utils.prd.data_preprocessing import data_preprocessing as preprocess_prd_data
 from .utils.spot.preprocessing import data_preprocessing as preprocess_spot_data
 from .utils.create_spotproduct import create_all_spot_products
@@ -23,32 +25,51 @@ from pprint import pprint
 # Create your views here.
 @api_view(['GET'])
 def get_prd(request):
-    # 호출
-    deposit_json, saving_json = prd_api()
-    # 전처리
-    deposit_json, deposit_opt_json = preprocess_prd_data(deposit_json)
-    saving_json, saving_opt_json = preprocess_prd_data(saving_json)
+    prd = Product.objects.all()
+    opt = Option.objects.all()
 
-    # 합치기
-    all_prd_json = deposit_json + saving_json
-    all_opt_json = deposit_opt_json + saving_opt_json
-    pprint(all_prd_json)
+    if not prd.exists() or not opt.exists():
+        # 호출
+        deposit_responses, saving_responses = prd_api()
+        # 전처리
+        for deposit in deposit_responses:
+            deposit_json, deposit_opt_json = preprocess_prd_data(deposit)
+            prd_serializer = ProductSerializer(data=deposit_json, many=True)
+            if prd_serializer.is_valid(raise_exception=True):
+                prd_serializer.save()
+            
+            opt_serializer = OptionSerializer(data=deposit_opt_json, many=True)
+            if opt_serializer.is_valid(raise_exception=True):
+                opt_serializer.save()
+
+        for saving in saving_responses:
+            saving_json, saving_opt_json = preprocess_prd_data(saving)
+            prd_serializer = ProductSerializer(data=saving_json, many=True)
+            if prd_serializer.is_valid(raise_exception=True):
+                prd_serializer.save()
+            
+            opt_serializer = OptionSerializer(data=saving_opt_json, many=True)
+            if opt_serializer.is_valid(raise_exception=True):
+                opt_serializer.save()        
+        prd = Product.objects.all()
+        opt = Option.objects.all()
     # 한번에 저장
-    prd_serializer = ProductSerializer(data=all_prd_json, many=True)
-    if prd_serializer.is_valid(raise_exception=True):
-        prd_serializer.save()
+    # prd_serializer = ProductSerializer(data=all_prd_json, many=True)
+    # if prd_serializer.is_valid(raise_exception=True):
+    #     prd_serializer.save()
     
-    opt_serializer = OptionSerializer(data=all_opt_json, many=True)
-    if opt_serializer.is_valid(raise_exception=True):
-        opt_serializer.save()
+    # opt_serializer = OptionSerializer(data=all_opt_json, many=True)
+    # if opt_serializer.is_valid(raise_exception=True):
+    #     opt_serializer.save()
+    prd_serializer = ProductSerializer(prd, many=True)
+    opt_serializer = OptionSerializer(opt, many=True)
 
     return Response(
         {
-            "count": len(all_prd_json),
             "results":
             {
-                "prd": prd_serializer.data, 
-                "opt": opt_serializer.data,
+                "prd":prd_serializer.data,
+                "opt":opt_serializer.data,
             }
         }, 
         status=status.HTTP_200_OK
