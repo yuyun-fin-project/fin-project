@@ -23,6 +23,7 @@ def api_call():
                 'pageNo': i
             }
             deposit_response = requests.get(URL, params=params).json()
+
             deposit_responses.append(deposit_response)
             max_page = deposit_response.get("result", {}).get("max_page_no", 1)
             i += 1
