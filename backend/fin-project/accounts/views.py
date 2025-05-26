@@ -145,6 +145,8 @@ def kakao_callback(request):
 
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
+    print(access_token)
+    
     response = redirect(f"http://localhost:5173/login-success?access={access_token}")
     response.set_cookie(
         key='refresh_token',
