@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 
+from .utils.cosine_similarity import recommend_products_hybrid
 from .utils.spot.spot_api import spot_api
 from .utils.prd.api_call import api_call as prd_api
 # from .utils.prd.api_call import api_call_all_pages as prd_api_all_pages
@@ -18,7 +19,7 @@ from rest_framework import status
 
 from .models import Product, Option, Gold, Oil, Carbon, SpotProductBookmark, SpotProduct, ProductBookmark
 from .serializers import ProductSerializer, OptionSerializer, GoldSerializer, OilSerializer, CarbonSerializer, RecommendInputSerializer
-from .utils.cosine_similarity import recommend_products
+from .utils.cosine_similarity import recommend_products_by_text
 
 from datetime import datetime, timedelta
 from pprint import pprint
@@ -218,7 +219,24 @@ def product_bookmark_list(request):
 @permission_classes([IsAuthenticated])
 def recommend_view(request):
     product_type = request.GET.get("product_type", "D")
-
+    user_query = request.GET.get("query", "")
+    save_term = request.GET.get("save_term")
+    
+    if save_term and save_term.isdigit():
+        save_term = int(save_term)
+    else:
+        save_term = None
+    
+    # 사용자 쿼리가 있는 경우 텍스트 기반 추천
+    if user_query:
+        recommendations = recommend_products_hybrid(
+            user_query=user_query,
+            product_type=product_type,
+            save_term=save_term
+        )
+        return Response(recommendations)
+    
+    # 쿼리가 없는 경우 기존 방식대로 금리 기반 추천
     products = Product.objects.filter(prd_type=product_type).prefetch_related('options')
 
     product_rates = []
@@ -229,9 +247,60 @@ def recommend_view(request):
             "상품명": product.fin_prdt_nm,
             "금융사": product.kor_co_nm,
             "금융상품유형": product.prd_type,
-            "금리": rate
+            "금리":rate,
         })
 
     top_products = sorted(product_rates, key=lambda x: x["금리"], reverse=True)[:3]
 
     return Response(top_products)
+
+
+@api_view(['GET'])
+def get_recommendation_queries(request):
+    """
+    자연어 기반 금융 상품 추천 시스템을 위한 추천 쿼리 문장을 제공합니다.
+    
+    쿼리 파라미터:
+    - type: 쿼리 유형 (deposit, savings, complex, goal, situation)
+    - count: 반환할 쿼리 수 (기본값: 5)
+    """
+    from .scripts.sentence_recommend import get_random_query, ALL_QUERIES, DEPOSIT_QUERIES, SAVINGS_QUERIES, COMPLEX_QUERIES, GOAL_BASED_QUERIES, SITUATION_BASED_QUERIES
+    
+    query_type = request.GET.get('type')
+    count = int(request.GET.get('count', 5))
+    
+    # 쿼리 타입에 따라 다른 목록 반환
+    if query_type == 'all':
+        # 모든 카테고리에서 랜덤 선택
+        import random
+        queries = random.sample(ALL_QUERIES, min(count, len(ALL_QUERIES)))
+    elif query_type == 'deposit':
+        import random
+        queries = random.sample(DEPOSIT_QUERIES, min(count, len(DEPOSIT_QUERIES)))
+    elif query_type == 'savings':
+        import random
+        queries = random.sample(SAVINGS_QUERIES, min(count, len(SAVINGS_QUERIES)))
+    elif query_type == 'complex':
+        import random
+        queries = random.sample(COMPLEX_QUERIES, min(count, len(COMPLEX_QUERIES)))
+    elif query_type == 'goal':
+        import random
+        queries = random.sample(GOAL_BASED_QUERIES, min(count, len(GOAL_BASED_QUERIES)))
+    elif query_type == 'situation':
+        import random
+        queries = random.sample(SITUATION_BASED_QUERIES, min(count, len(SITUATION_BASED_QUERIES)))
+    else:
+        # 기본값: 각 카테고리에서 1개씩 선택
+        import random
+        queries = []
+        queries.append(random.choice(DEPOSIT_QUERIES))
+        queries.append(random.choice(SAVINGS_QUERIES))
+        queries.append(random.choice(COMPLEX_QUERIES))
+        queries.append(random.choice(GOAL_BASED_QUERIES))
+        queries.append(random.choice(SITUATION_BASED_QUERIES))
+        # count가 5보다 크면 추가 쿼리 랜덤 선택
+        if count > 5:
+            additional = random.sample(ALL_QUERIES, min(count - 5, len(ALL_QUERIES)))
+            queries.extend(additional)
+    
+    return Response({'queries': queries})
