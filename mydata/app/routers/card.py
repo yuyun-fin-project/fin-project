@@ -109,7 +109,7 @@ def get_domestic_approvals(
 @router.get("/bills", response_model=CardBillListResponse)
 def get_card_bills(
     current_user: str = Depends(get_current_user),
-    org_code: str = Query(...),
+    # org_code: str = Query(...),
     from_month: str = Query(...),
     to_month: str = Query(...),
     next_page: str = Query(default=None),
@@ -130,11 +130,10 @@ def get_card_bills(
     bills = query.all()
 
     next_page_value = bills[-1].charge_month if len(bills) == limit else None
-
     return {
         "rsp_code": "00000",
         "rsp_msg": "정상처리",
         "bill_cnt": len(bills),
         "bill_list": bills,
-        "next_page": next_page_value
+        "next_page": next_page_value,
     }

@@ -1,5 +1,5 @@
-from mydata.models import Card
-from mydata.serializers import CardSerializer
+from mydata.models import Card, CardApproval, CardBill
+from mydata.serializers import CardSerializer, CardApprovalSerializer
 
 # 응답 형식
 ''' 
@@ -33,23 +33,40 @@ from mydata.serializers import CardSerializer
 '''
 
 # 마이 데이터 전처리 프로세스
-def data_preprocessing(data):
-    # 카드 리스트 담기
-    card_field_names = [field.name for field in Card._meta.fields]
-    cleaned_card_list = []
-    # 상품 리스트 추출
-    card_list = data.get("data", {})
-    jwt_token = data.get("access_token", {})
-    for card in card_list:
-        card_temp = {}
-        for key, value in card.items():
-            if key in card_field_names:
-                card_temp[key] = value
-        cleaned_card_list.append(card_temp)
-    print(cleaned_card_list)
-    # 카드 정보 저장
-    serializer = CardSerializer(data=cleaned_card_list, many=True)
-    if serializer.is_valid():
-        serializer.save()
+def data_preprocessing(data, type):
+    if type == 'cards':
+        # 카드 리스트 담기
+        card_field_names = [field.name for field in Card._meta.fields]
+        cleaned_card_list = []
+        # 상품 리스트 추출
+        card_list = data.get("data", {})
+        jwt_token = data.get("access_token", {})
+        for card in card_list:
+            card_temp = {}
+            for key, value in card.items():
+                if key in card_field_names:
+                    card_temp[key] = value
+            cleaned_card_list.append(card_temp)
+        # print(cleaned_card_list)
+        # 카드 정보 저장
+        # serializer = CardSerializer(data=cleaned_card_list, many=True)
+        # if serializer.is_valid():
+        #     serializer.save()
+        return cleaned_card_list, jwt_token
     
-    return serializer.data, jwt_token
+    elif type == 'approvals':
+        approval_field_names = [field.name for field in CardApproval._meta.fields]
+        cleaned_approval_list = []
+        # print(approval_field_names)
+        # print(data)
+        # 상품 리스트 추출
+        approval_list = data.get("approved_list", {})
+        for approval in approval_list:
+            approval_temp = {}
+            for key, value in approval.items():
+                if key in approval_field_names:
+                    approval_temp[key] = value
+            cleaned_approval_list.append(approval_temp)
+            
+        return cleaned_approval_list
+        
