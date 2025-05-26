@@ -1,5 +1,6 @@
 <template>
-  <div class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="article-detail-modal">
+    <div class="modal-overlay"></div>
     <div 
       v-motion
       :initial="{ opacity: 0, scale: 0.95 }"

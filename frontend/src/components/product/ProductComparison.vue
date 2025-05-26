@@ -16,7 +16,6 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">공시 제출월</th>
             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">금융회사명</th>
             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">상품명</th>
             <th 
@@ -35,7 +34,6 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="product in sortedProducts" :key="product.fin_prdt_cd" @click="openDetail(product)" 
               class="hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ formatDate(product.fin_co_subm_day) }}</td>
             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ product.kor_co_nm }}</td>
             <td class="px-4 py-3 text-sm text-gray-900">
               <div>{{ product.fin_prdt_nm }}</div>
@@ -72,24 +70,14 @@
         </tbody>
       </table>
     </div>
-
-    <!-- 상품 상세 모달 -->
-    <ProductDetailModal
-      v-if="showModal"
-      :show="showModal"
-      :product="selectedProduct"
-      :is-authenticated="props.isAuthenticated"
-      @close="closeModal"
-      @bookmark-updated="handleBookmarkUpdated"
-    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useFinanceStore } from '../../stores/finance.js'
+import { useModalStore } from '../../stores/modalStore'
 import axios from 'axios'
-import ProductDetailModal from './ProductDetailModal.vue'
 
 // axios 기본 설정
 axios.defaults.withCredentials = true // 모든 요청에 쿠키 포함
@@ -142,18 +130,14 @@ const props = defineProps({
   },
   sortBy: {
     type: String,
-    default: 'rate'
+    default: 'rate_desc'
   }
 })
 
+const emit = defineEmits(['update:products'])
+
 const financeStore = useFinanceStore()
-const selectedBank = ref('')
-const selectedPeriod = ref('')
-const selectedType = ref('all')
-const sortBy = ref('rate')
-const products = ref([])
-const showModal = ref(false)
-const selectedProduct = ref(null)
+const modalStore = useModalStore()
 const bookmarkedProducts = ref([])
 const currentUserId = ref(null)
 
@@ -184,22 +168,32 @@ const fetchProducts = async () => {
       const optList = response.data.results.opt || []
 
       // 상품별 옵션 매핑
-      products.value = prdList.map(prd => {
-        const productOptions = optList.filter(opt => opt.fin_prdt_cd === prd.fin_prdt_cd)
-        console.log('Product options for', prd.fin_prdt_cd, ':', productOptions)
+      const processedProducts = prdList.map(prd => {
+        // 해당 상품의 옵션들을 찾습니다
+        let productOptions = optList.filter(opt => opt.prd === prd.id)
+
+        // 중복 제거: 동일한 조건의 옵션은 하나만 유지
+        const uniqueOptions = productOptions.reduce((unique, opt) => {
+          const key = `${opt.save_trm}-${opt.intr_rate}-${opt.intr_rate2}-${opt.intr_rate_type_nm}-${opt.rsrv_type_nm}`
+          if (!unique[key]) {
+            unique[key] = {
+              ...opt,
+              save_trm: opt.save_trm ? parseInt(opt.save_trm) : null,
+              intr_rate: opt.intr_rate !== null ? parseFloat(opt.intr_rate) : null,
+              intr_rate2: opt.intr_rate2 !== null ? parseFloat(opt.intr_rate2) : null
+            }
+          }
+          return unique
+        }, {})
         
         return {
           ...prd,
-          options: productOptions.map(opt => ({
-            ...opt,
-            save_trm: opt.save_trm ? parseInt(opt.save_trm) : null,
-            intr_rate: opt.intr_rate ? parseFloat(opt.intr_rate) : null,
-            intr_rate2: opt.intr_rate2 ? parseFloat(opt.intr_rate2) : null
-          }))
+          options: Object.values(uniqueOptions)
         }
       })
 
-      console.log('변환된 상품 데이터:', products.value)
+      console.log('변환된 상품 데이터:', processedProducts)
+      emit('update:products', processedProducts)
     }
   } catch (err) {
     console.error('금융상품 데이터 가져오기 실패:', err)
@@ -342,14 +336,8 @@ const toggleBookmark = async (productId) => {
 }
 
 // 모달 관련 함수들
-const openProductDetail = (product) => {
-  selectedProduct.value = product
-  showModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  selectedProduct.value = null
+const openDetail = (product) => {
+  modalStore.openProductDetailModal(product)
 }
 
 const handleBookmarkUpdated = async () => {
@@ -358,9 +346,10 @@ const handleBookmarkUpdated = async () => {
 
 // 필터링된 상품 목록
 const filteredProducts = computed(() => {
-  if (!Array.isArray(props.products)) return []
+  const products = props.products || []
+  console.log('필터링할 상품 데이터:', products)
 
-  return props.products.filter(product => {
+  return products.filter(product => {
     if (!product) return false
 
     // 은행명 필터
@@ -380,22 +369,33 @@ const filteredProducts = computed(() => {
 
 // 정렬된 상품 목록
 const sortedProducts = computed(() => {
-  if (!Array.isArray(filteredProducts.value)) return []
+  if (!Array.isArray(props.products)) return []
 
-  return [...filteredProducts.value].sort((a, b) => {
-    if (!a || !b) return 0
-
-    if (currentSortPeriod.value) {
-      const aOption = getOptionForPeriod(a, currentSortPeriod.value)
-      const bOption = getOptionForPeriod(b, currentSortPeriod.value)
-
-      const aRate = aOption ? (sortDirection.value === 'asc' ? aOption.intr_rate : aOption.intr_rate2) || 0 : 0
-      const bRate = bOption ? (sortDirection.value === 'asc' ? bOption.intr_rate : bOption.intr_rate2) || 0 : 0
-
-      return sortDirection.value === 'asc' ? aRate - bRate : bRate - aRate
+  return [...props.products].sort((a, b) => {
+    // 각 상품의 최대 금리 계산
+    const getMaxRate = (product) => {
+      if (!product.options?.length) return 0
+      return Math.max(...product.options.map(opt => 
+        Math.max(
+          parseFloat(opt.intr_rate) || 0,
+          parseFloat(opt.intr_rate2) || 0
+        )
+      ))
     }
 
-    return a.kor_co_nm.localeCompare(b.kor_co_nm)
+    const aMaxRate = getMaxRate(a)
+    const bMaxRate = getMaxRate(b)
+
+    switch (props.sortBy) {
+      case 'rate_desc':
+        return bMaxRate - aMaxRate || a.kor_co_nm.localeCompare(b.kor_co_nm)
+      case 'rate_asc':
+        return aMaxRate - bMaxRate || a.kor_co_nm.localeCompare(b.kor_co_nm)
+      case 'bank':
+        return a.kor_co_nm.localeCompare(b.kor_co_nm)
+      default:
+        return bMaxRate - aMaxRate || a.kor_co_nm.localeCompare(b.kor_co_nm)
+    }
   })
 })
 
@@ -405,14 +405,37 @@ const getOptionForPeriod = (product, period) => {
     return null
   }
 
-  return product.options.find(opt => opt?.save_trm === period)
+  // 해당 기간의 모든 옵션을 찾음
+  const periodOptions = product.options.filter(opt => {
+    const optPeriod = opt?.save_trm ? parseInt(opt.save_trm) : null
+    return optPeriod === period
+  })
+
+  if (!periodOptions.length) return null
+
+  // 중복 제거: 동일한 금리 조건을 가진 옵션은 하나만 선택
+  const uniqueOptions = periodOptions.reduce((unique, opt) => {
+    const key = `${opt.intr_rate}-${opt.intr_rate2}-${opt.intr_rate_type_nm}-${opt.rsrv_type_nm}`
+    if (!unique[key]) {
+      unique[key] = opt
+    }
+    return unique
+  }, {})
+
+  // 중복 제거된 옵션 중 가장 높은 금리를 가진 옵션 반환
+  return Object.values(uniqueOptions).reduce((maxOpt, opt) => {
+    const currentMax = maxOpt ? Math.max(parseFloat(maxOpt.intr_rate) || 0, parseFloat(maxOpt.intr_rate2) || 0) : 0
+    const newMax = Math.max(parseFloat(opt.intr_rate) || 0, parseFloat(opt.intr_rate2) || 0)
+    return newMax > currentMax ? opt : maxOpt
+  }, null)
 }
 
 // 특정 기간에 대한 기본 금리 반환
 const getBaseRate = (product, period) => {
   const option = getOptionForPeriod(product, period)
-  if (!option?.intr_rate) return '-'
-  return option.intr_rate.toFixed(2)
+  if (!option || option.intr_rate === null || option.intr_rate === undefined) return '-'
+  const rate = parseFloat(option.intr_rate)
+  return isNaN(rate) ? '-' : rate.toFixed(2)
 }
 
 // 특정 기간에 대한 최대 금리 반환
@@ -420,9 +443,15 @@ const getMaxRate = (product, period) => {
   const option = getOptionForPeriod(product, period)
   if (!option) return '-'
 
-  const baseRate = option.intr_rate || 0
-  const preferentialRate = option.intr_rate2 || 0
-  const maxRate = Math.max(baseRate, preferentialRate)
+  const baseRate = option.intr_rate ? parseFloat(option.intr_rate) : 0
+  const preferentialRate = option.intr_rate2 ? parseFloat(option.intr_rate2) : 0
+  
+  if (isNaN(baseRate) && isNaN(preferentialRate)) return '-'
+  
+  const maxRate = Math.max(
+    isNaN(baseRate) ? 0 : baseRate,
+    isNaN(preferentialRate) ? 0 : preferentialRate
+  )
 
   return maxRate.toFixed(2)
 }
@@ -432,7 +461,10 @@ const hasPreferentialRate = (product, period) => {
   const option = getOptionForPeriod(product, period)
   if (!option) return false
 
-  return (option.intr_rate2 || 0) > (option.intr_rate || 0)
+  const baseRate = option.intr_rate ? parseFloat(option.intr_rate) : 0
+  const preferentialRate = option.intr_rate2 ? parseFloat(option.intr_rate2) : 0
+
+  return !isNaN(preferentialRate) && !isNaN(baseRate) && preferentialRate > baseRate
 }
 
 // 금리 유형 반환
@@ -511,11 +543,6 @@ const sortByPeriod = (period) => {
     sortDirection.value = 'asc'
   }
   console.log('Sorting by period:', period, 'direction:', sortDirection.value)
-}
-
-const openDetail = (product) => {
-  selectedProduct.value = product
-  showModal.value = true
 }
 
 // 컴포넌트 마운트 시 데이터 감시

@@ -21,28 +21,19 @@
         {{ error }}
       </div>
 
-      <!-- 금리 비교 테이블 -->
+      <!-- 상품 목록 -->
       <div v-else class="flex-1 overflow-hidden">
-        <table class="min-w-full table-fixed">
-          <thead class="bg-white">
-            <tr class="border-b border-gray-200">
-              <th class="w-1/2 px-4 py-3 text-left text-sm font-semibold text-gray-600">상품명</th>
-              <th class="w-1/4 px-4 py-3 text-right text-sm font-semibold text-gray-600">최고금리</th>
-              <th class="w-1/4 px-4 py-3 text-right text-sm font-semibold text-gray-600">기간</th>
-            </tr>
-          </thead>
-        </table>
-        
-        <div class="overflow-hidden" style="height: 240px"> <!-- 4개 항목이 보이도록 높이 고정 -->
-          <div 
-            ref="scrollContainer" 
-            class="transition-transform duration-1000 ease-linear"
-            :style="{ transform: `translateY(${-scrollPosition}px)` }"
-          >
+        <div 
+          class="relative overflow-y-auto h-full" 
+          ref="scrollContainer"
+          @mouseenter="pauseAnimation"
+          @mouseleave="resumeAnimation"
+        >
+          <div class="absolute inset-0">
             <table class="min-w-full table-fixed">
               <tbody>
                 <tr 
-                  v-for="product in displayProducts" 
+                  v-for="product in products" 
                   :key="product.id"
                   class="hover:bg-gray-50 cursor-pointer group h-15"
                   @click="openDetail(product)"
@@ -53,7 +44,7 @@
                   </td>
                   <td class="w-1/4 px-4 py-3 text-right">
                     <span :class="getInterestRateColor(getMaxRate(product))" class="text-sm whitespace-nowrap">
-                      {{ getMaxRate(product) }}%
+                      {{ getMaxRate(product).toFixed(2) }}%
                     </span>
                   </td>
                   <td class="w-1/4 px-4 py-3 text-right">
@@ -68,16 +59,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 상품 상세 모달 -->
-    <ProductDetailModal
-      v-if="showModal"
-      :show="showModal"
-      :product="selectedProduct"
-      :is-authenticated="isAuthenticated"
-      @close="closeModal"
-      @bookmark-updated="fetchProducts"
-    />
   </div>
 </template>
 
@@ -85,6 +66,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import ProductDetailModal from './product/ProductDetailModal.vue'
+import { useModalStore } from '../stores/modalStore'
 
 // 상태 관리
 const isLoading = ref(false)
@@ -95,7 +77,20 @@ const selectedProduct = ref(null)
 const isAuthenticated = ref(false)
 const scrollPosition = ref(0)
 const scrollContainer = ref(null)
+const modalStore = useModalStore()
 let animationInterval = null
+const ROW_HEIGHT = 60 // 각 행의 높이
+
+// 현재 표시 시작 인덱스
+const currentIndex = ref(0)
+
+// 화면에 표시할 상품 개수 계산
+const calculateVisibleProducts = () => {
+  if (!scrollContainer.value) return 4 // 기본값
+
+  const containerHeight = scrollContainer.value.clientHeight
+  return Math.floor(containerHeight / ROW_HEIGHT)
+}
 
 // 상품 데이터 가져오기
 const fetchProducts = async () => {
@@ -115,17 +110,18 @@ const fetchProducts = async () => {
     // 상품별 옵션 매핑
     products.value = prdList.map(prd => ({
       ...prd,
-      options: optList.filter(opt => opt.fin_prdt_cd === prd.fin_prdt_cd)
-        .map(opt => ({
-          ...opt,
-          save_trm: parseInt(opt.save_trm) || 12,
-          intr_rate: parseFloat(opt.intr_rate) || 0,
-          intr_rate2: parseFloat(opt.intr_rate2) || 0
-        }))
+      options: optList.filter(opt => opt.prd === prd.id)
     }))
-
-    // 금리 기준으로 정렬
-    products.value.sort((a, b) => getMaxRate(b) - getMaxRate(a))
+    
+    // 컨테이너 크기에 맞춰 표시할 상품 개수 조정
+    const visibleCount = calculateVisibleProducts()
+    if (products.value.length < visibleCount) {
+      // 표시할 개수보다 상품이 적으면 상품을 복제하여 채움
+      const additionalProducts = [...products.value]
+      while (products.value.length < visibleCount) {
+        products.value = [...products.value, ...additionalProducts]
+      }
+    }
     
     startScrollAnimation()
   } catch (err) {
@@ -142,24 +138,36 @@ const startScrollAnimation = () => {
     clearInterval(animationInterval)
   }
 
-  const ROW_HEIGHT = 60 // 각 행의 높이
-  const SCROLL_INTERVAL = 3000 // 스크롤 간격 (3초)
+  const SCROLL_INTERVAL = 50 // 스크롤 간격 (0.05초)
+  const SCROLL_STEP = 1 // 한 번에 이동할 픽셀
   
   animationInterval = setInterval(() => {
-    if (scrollPosition.value >= (products.value.length - 4) * ROW_HEIGHT) {
-      // 마지막에 도달하면 처음으로 돌아감
-      scrollPosition.value = 0
+    if (!scrollContainer.value) return
+
+    const maxScroll = scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight
+    const currentScroll = scrollContainer.value.scrollTop
+
+    if (currentScroll >= maxScroll) {
+      // 마지막에 도달하면 처음으로 즉시 이동
+      scrollContainer.value.scrollTop = 0
     } else {
-      scrollPosition.value += ROW_HEIGHT
+      // 부드럽게 스크롤
+      scrollContainer.value.scrollTop = currentScroll + SCROLL_STEP
     }
   }, SCROLL_INTERVAL)
 }
 
-// 표시할 전체 상품 목록
-const displayProducts = computed(() => {
-  // 원본 배열을 두 번 연결하여 무한 스크롤 효과 생성
-  return [...products.value, ...products.value]
-})
+// 마우스가 컨테이너 위에 있을 때 자동 스크롤 멈춤
+const pauseAnimation = () => {
+  if (animationInterval) {
+    clearInterval(animationInterval)
+  }
+}
+
+// 마우스가 컨테이너를 벗어날 때 자동 스크롤 재시작
+const resumeAnimation = () => {
+  startScrollAnimation()
+}
 
 // 최고 금리 계산
 const getMaxRate = (product) => {
@@ -175,7 +183,11 @@ const getMaxRate = (product) => {
 const getMinPeriod = (product) => {
   if (!product.options?.length) return '-'
   
-  const periods = product.options.map(opt => parseInt(opt.save_trm) || 12)
+  const periods = product.options
+    .map(opt => parseInt(opt.save_trm))
+    .filter(p => !isNaN(p))
+  
+  if (periods.length === 0) return '-'
   return Math.min(...periods)
 }
 
@@ -189,8 +201,7 @@ const getInterestRateColor = (rate) => {
 
 // 모달 관련 함수
 const openDetail = (product) => {
-  selectedProduct.value = product
-  showModal.value = true
+  modalStore.openProductDetailModal(product)
 }
 
 const closeModal = () => {
@@ -204,14 +215,35 @@ const checkAuthStatus = async () => {
   isAuthenticated.value = !!token
 }
 
+// 창 크기 변경 감지
+let resizeObserver = null
+
 onMounted(async () => {
   await checkAuthStatus()
   await fetchProducts()
+
+  // ResizeObserver를 사용하여 컨테이너 크기 변경 감지
+  resizeObserver = new ResizeObserver(() => {
+    const visibleCount = calculateVisibleProducts()
+    if (products.value.length < visibleCount) {
+      const additionalProducts = [...products.value]
+      while (products.value.length < visibleCount) {
+        products.value = [...products.value, ...additionalProducts]
+      }
+    }
+  })
+
+  if (scrollContainer.value) {
+    resizeObserver.observe(scrollContainer.value)
+  }
 })
 
 onUnmounted(() => {
   if (animationInterval) {
     clearInterval(animationInterval)
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
   }
 })
 </script>
@@ -239,8 +271,21 @@ tr {
   background-color: #f9fafb;
 }
 
-/* 스크롤바 숨기기 */
-.overflow-hidden::-webkit-scrollbar {
-  display: none;
+/* 스크롤바 스타일링 */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 </style> 

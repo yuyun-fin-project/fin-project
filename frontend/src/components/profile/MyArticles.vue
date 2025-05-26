@@ -42,23 +42,15 @@
     <div v-else class="text-center text-gray-500 py-8">
       작성한 글이 없습니다.
     </div>
-
-    <!-- 상세 모달 -->
-    <article-detail-modal
-      v-if="selectedArticle"
-      :article="selectedArticle"
-      @close="closeDetailModal"
-      @delete="handleDelete"
-      @update="handleUpdate"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { articleService } from '@/services/articleService'
-import ArticleDetailModal from '@/components/ArticleDetailModal.vue'
+import { useModalStore } from '@/stores/modalStore'
 
+const modalStore = useModalStore()
 const props = defineProps({
   articles: {
     type: Array,
@@ -67,8 +59,22 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['refresh'])
-const selectedArticle = ref(null)
 const isExpanded = ref(false)
+
+// 새로고침 이벤트 리스너 등록
+onMounted(() => {
+  window.addEventListener('refresh-my-articles', handleRefresh)
+})
+
+// 컴포넌트 언마운트 시 이벤트 리스너 제거
+onUnmounted(() => {
+  window.removeEventListener('refresh-my-articles', handleRefresh)
+})
+
+// 새로고침 핸들러
+const handleRefresh = () => {
+  emit('refresh')
+}
 
 // 표시할 게시글 목록
 const displayedArticles = computed(() => {
@@ -90,17 +96,13 @@ const formatDate = (dateString) => {
 }
 
 const openDetailModal = (article) => {
-  selectedArticle.value = article
-}
-
-const closeDetailModal = () => {
-  selectedArticle.value = null
+  modalStore.openArticleDetailModal(article)
 }
 
 const handleDelete = async (articleId) => {
   try {
     await articleService.deleteArticle(articleId)
-    closeDetailModal()
+    modalStore.closeArticleDetailModal()
     emit('refresh') // 부모 컴포넌트에 새로고침 요청
   } catch (error) {
     console.error('게시글 삭제 실패:', error)
@@ -110,7 +112,7 @@ const handleDelete = async (articleId) => {
 const handleUpdate = async (articleData) => {
   try {
     await articleService.updateArticle(articleData.id, articleData)
-    closeDetailModal()
+    modalStore.closeArticleDetailModal()
     emit('refresh') // 부모 컴포넌트에 새로고침 요청
   } catch (error) {
     console.error('게시글 수정 실패:', error)

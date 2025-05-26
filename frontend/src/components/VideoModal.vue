@@ -1,8 +1,10 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div v-if="show" class="fixed inset-0 z-[1001] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
       <!-- 배경 오버레이 -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="$emit('close')"></div>
+      <div class="fixed inset-0 transition-opacity" @click="handleClose">
+        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+      </div>
 
       <!-- 모달 컨텐츠 -->
       <div class="relative inline-block w-full max-w-4xl p-6 my-8 text-left align-middle bg-white rounded-lg shadow-xl transform transition-all">
@@ -11,7 +13,7 @@
           <button
             type="button"
             class="bg-white rounded-full p-2 text-gray-400 hover:text-gray-500 focus:outline-none hover:bg-gray-100"
-            @click="$emit('close')"
+            @click="handleClose"
           >
             <span class="sr-only">닫기</span>
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,8 +45,8 @@
             <p class="text-gray-700 text-base whitespace-pre-line">
               {{ isExpanded ? video.description : truncatedDescription }}
               <button
-                v-if="video.description.length > 90"
-                @click="isExpanded = !isExpanded"
+                v-if="shouldShowToggle"
+                @click="toggleDescription"
                 class="text-blue-600 hover:text-blue-800 font-medium ml-2"
               >
                 {{ isExpanded ? '간략히' : '더보기' }}
@@ -85,13 +87,31 @@ watch(() => props.video, (newVideo) => {
   console.log('Full description:', newVideo?.description)
 }, { immediate: true, deep: true })
 
-const isExpanded = ref(false)
-const truncatedDescription = computed(() => {
-  if (!props.video.description) return ''
-  return props.video.description.length > 90
-    ? props.video.description.slice(0, 90) + '...'
-    : props.video.description
+// 모달이 열리고 닫힐 때 body 스크롤 제어
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
 })
+
+const isExpanded = ref(false)
+const DESCRIPTION_LIMIT = 200 // 더 긴 글자 수로 변경
+
+const truncatedDescription = computed(() => {
+  if (!props.video?.description) return ''
+  if (props.video.description.length <= DESCRIPTION_LIMIT) return props.video.description
+  return props.video.description.slice(0, DESCRIPTION_LIMIT) + '...'
+})
+
+const shouldShowToggle = computed(() => {
+  return props.video?.description?.length > DESCRIPTION_LIMIT
+})
+
+const toggleDescription = () => {
+  isExpanded.value = !isExpanded.value
+}
 
 const emit = defineEmits(['close'])
 const videoId = computed(() => props.video?.id || '')
@@ -103,6 +123,12 @@ const formatDate = (dateString) => {
     month: 'long',
     day: 'numeric'
   }).format(date)
+}
+
+// 닫기 핸들러
+const handleClose = () => {
+  document.body.style.overflow = ''
+  emit('close')
 }
 </script>
 
@@ -137,6 +163,30 @@ const formatDate = (dateString) => {
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* 모달 스타일 */
+.fixed {
+  position: fixed;
+}
+
+.z-[1001] {
+  z-index: 1001;
+}
+
+/* 배경 오버레이 스타일 */
+.bg-opacity-75 {
+  --tw-bg-opacity: 0.75;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
 }
 </style> 
 

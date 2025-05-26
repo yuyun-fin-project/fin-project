@@ -1,501 +1,728 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg p-6 h-full flex flex-col">
-    <!-- 헤더 영역 -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-semibold text-gray-900">시세 차트</h2>
-      <div class="flex items-center space-x-4">
-        <!-- 날짜 선택 -->
+  <div class="bg-white rounded-xl shadow-sm p-6">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">시세 차트</h2>
+      <p class="mt-1 text-sm text-gray-500">금, 석유, 탄소 시세를 확인하세요</p>
+    </div>
+
+    <!-- 상품 선택 탭 -->
+    <div class="mb-6">
+      <div class="flex justify-center p-1 bg-gray-50 rounded-xl">
+        <nav class="flex space-x-2" aria-label="Tabs">
+          <button
+            v-for="tab in tabs"
+            :key="tab.name"
+            @click="currentTab = tab.id"
+            :class="[
+              currentTab === tab.id
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100',
+              'flex items-center px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out'
+            ]"
+          >
+            <span class="flex items-center">
+              <!-- 자산 이모티콘 -->
+              <span class="text-xl mr-2">{{ tab.emoji }}</span>
+              {{ tab.name }}
+              <!-- 가격 변동 표시기 -->
+              <span 
+                v-if="currentTab === tab.id && priceChange"
+                :class="[
+                  priceChange > 0 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600',
+                  'ml-2 px-2 py-0.5 rounded-full text-xs font-medium'
+                ]"
+              >
+                {{ priceChange > 0 ? '▲' : '▼' }}
+                {{ Math.abs(priceChangePercent).toFixed(1) }}%
+              </span>
+            </span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- 기간 선택 -->
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
         <div class="flex items-center space-x-3">
-          <div class="relative date-input-container">
-            <label class="absolute -top-2 left-2 text-xs bg-white px-1 text-gray-500">시작일</label>
+        <div class="relative">
             <input
               type="date"
               v-model="startDate"
               :max="endDate"
-              class="px-4 py-2.5 pr-8 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700 appearance-none cursor-pointer hover:border-gray-300 transition-colors w-[160px]"
+            class="block w-full text-black rounded-lg border-gray-300 pl-3 pr-10 py-2.5 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm"
+            @change="handleDateChange"
             />
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+            </svg>
           </div>
-          <span class="text-gray-400">~</span>
-          <div class="relative date-input-container">
-            <label class="absolute -top-2 left-2 text-xs bg-white px-1 text-gray-500">종료일</label>
+        </div>
+        <span class="text-gray-500 font-medium">~</span>
+        <div class="relative">
             <input
               type="date"
               v-model="endDate"
               :min="startDate"
-              class="px-4 py-2.5 pr-8 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700 appearance-none cursor-pointer hover:border-gray-300 transition-colors w-[160px]"
+            class="block w-full text-black rounded-lg border-gray-300 pl-3 pr-10 py-2.5 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm"
+            @change="handleDateChange"
             />
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+            </svg>
           </div>
         </div>
-        <!-- 자산 선택 버튼 -->
-        <div class="flex items-center space-x-2">
+      </div>
+      <div class="flex flex-wrap gap-2">
           <button
-            v-for="asset in assets"
-            :key="asset.value"
-            @click="selectAsset(asset.value)"
+          v-for="period in quickPeriods"
+          :key="period.days"
+          @click="setQuickPeriod(period.days)"
+          class="px-4 py-2 text-sm rounded-lg transition-all duration-200 ease-in-out shadow-sm"
             :class="[
-              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-              selectedAsset === asset.value
-                ? asset.activeClass
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            ]"
-          >
-            {{ asset.label }}
+            isCurrentPeriod(period.days)
+              ? 'bg-blue-500 text-white shadow-md transform scale-105'
+              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+          ]"
+        >
+          {{ period.label }}
           </button>
+      </div>
+    </div>
+
+    <!-- 데이터 없음 상태 표시 -->
+    <div v-if="showNoDataMessage" class="mb-6 p-4 bg-yellow-50 rounded-lg">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-yellow-800">데이터 없음</h3>
+          <div class="mt-2 text-sm text-yellow-700">
+            <p>선택하신 기간에 데이터가 없습니다. 다른 기간을 선택해주세요.</p>
+          </div>
         </div>
       </div>
     </div>
     
-    <!-- 로딩 상태 -->
-    <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+    <!-- 차트 영역 -->
+    <div class="relative h-80 mb-6">
+      <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
     </div>
-
-    <!-- 에러 메시지 -->
-    <div v-else-if="error" class="flex-1 flex items-center justify-center text-red-600">
-      {{ error }}
+      <div v-if="showChartError" class="absolute inset-0 flex items-center justify-center bg-white rounded-lg">
+        <div class="text-center p-4">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">차트 로딩 오류</h3>
+          <p class="mt-1 text-sm text-gray-500">페이지를 새로고침 해주세요</p>
+          <div class="mt-4">
+            <button
+              type="button"
+              @click="handleRefresh"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg class="mr-2 -ml-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+              </svg>
+              새로고침
+            </button>
+          </div>
+        </div>
+      </div>
+      <canvas ref="chartRef" class="rounded-lg"></canvas>
     </div>
 
-    <!-- 차트 -->
-    <div v-else class="flex-1 relative min-h-[350px]">
-      <div ref="chartContainer" class="absolute inset-0"></div>
+    <!-- 현재 시세 정보 -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="rounded-lg bg-gray-50 p-4 transition-colors duration-200 hover:bg-gray-100">
+        <h3 class="text-sm font-medium text-gray-500">현재 시세</h3>
+        <p class="mt-2 text-lg font-semibold text-gray-900">
+          {{ currentPrice ? formatPrice(currentPrice) : '-' }}
+        </p>
+      </div>
+      <div class="rounded-lg bg-gray-50 p-4 transition-colors duration-200 hover:bg-gray-100">
+        <h3 class="text-sm font-medium text-gray-500">전일 대비</h3>
+        <p :class="['mt-2 text-lg font-semibold', getPriceChangeColor()]">
+          {{ priceChange ? (priceChange > 0 ? '+' : '') + formatPrice(priceChange) : '-' }}
+        </p>
+      </div>
+      <div class="rounded-lg bg-gray-50 p-4 transition-colors duration-200 hover:bg-gray-100">
+        <h3 class="text-sm font-medium text-gray-500">변동률</h3>
+        <p :class="['mt-2 text-lg font-semibold', getPriceChangeColor()]">
+          {{ priceChangePercent ? (priceChangePercent > 0 ? '+' : '') + priceChangePercent.toFixed(2) + '%' : '-' }}
+        </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue'
-import * as echarts from 'echarts'
+import { ref, onMounted, watch } from 'vue'
+import Chart from 'chart.js/auto'
 import axios from 'axios'
+import { format, subDays, parseISO } from 'date-fns'
+import 'chartjs-adapter-date-fns'
+import { ko } from 'date-fns/locale'
 
 // 상태 관리
-const chartContainer = ref(null)
+const chartRef = ref(null)
 const chart = ref(null)
 const isLoading = ref(false)
-const error = ref(null)
-const startDate = ref(getDefaultStartDate())
-const endDate = ref(getDefaultEndDate())
-const selectedAsset = ref('gold')
+const currentTab = ref('gold')
+const startDate = ref('')
+const endDate = ref('')
+const minDate = ref('')
+const maxDate = ref('')
+const currentPrice = ref(null)
+const priceChange = ref(null)
+const priceChangePercent = ref(null)
 
-// 자산 정의
-const assets = [
-  { value: 'gold', label: '금', activeClass: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' },
-  { value: 'oil', label: '석유', activeClass: 'bg-blue-100 text-blue-800 hover:bg-blue-200' },
-  { value: 'carbon', label: '탄소', activeClass: 'bg-green-100 text-green-800 hover:bg-green-200' }
+// 데이터 캐싱
+const cachedData = ref({
+  gold: null,
+  oil: null,
+  carbon: null
+})
+
+// API 호출 디바운스 타이머
+let debounceTimer = null
+
+// 탭 정의
+const tabs = [
+  { id: 'gold', name: '금', emoji: '💰' },
+  { id: 'oil', name: '석유', emoji: '⛽' },
+  { id: 'carbon', name: '탄소', emoji: '🌱' }
 ]
 
-// 기본 날짜 설정 함수
-function getDefaultStartDate() {
-  const date = new Date()
-  date.setMonth(date.getMonth() - 1)
-  return date.toISOString().split('T')[0]
+// 빠른 기간 선택 옵션
+const quickPeriods = [
+  { days: 7, label: '1주' },
+  { days: 30, label: '1개월' },
+  { days: 90, label: '3개월' },
+  { days: 180, label: '6개월' },
+  { days: 365, label: '1년' }
+]
+
+// 현재 선택된 기간이 빠른 선택 옵션과 일치하는지 확인
+const isCurrentPeriod = (days) => {
+  if (!startDate.value || !endDate.value) return false
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
+  const diff = Math.round((end - start) / (1000 * 60 * 60 * 24))
+  return diff === days
 }
 
-function getDefaultEndDate() {
-  return new Date().toISOString().split('T')[0]
+// 빠른 기간 선택
+const setQuickPeriod = (days) => {
+  const end = new Date()
+  const start = subDays(end, days)
+  
+  // 시작일이 종료일보다 늦지 않도록 보장
+  if (start <= end) {
+    startDate.value = format(start, 'yyyy-MM-dd')
+    endDate.value = format(end, 'yyyy-MM-dd')
+  } else {
+    // 만약 날짜가 거꾸로 되었다면 바로잡기
+    startDate.value = format(end, 'yyyy-MM-dd')
+    endDate.value = format(start, 'yyyy-MM-dd')
+  }
+  
+  console.log('기간 설정:', { start: startDate.value, end: endDate.value })
+  fetchData()
 }
 
-// 차트 리사이즈 핸들러
-const handleResize = () => {
-  if (chart.value && !chart.value.isDisposed()) {
-    chart.value.resize()
+// 데이터 없음 상태 관리
+const showNoDataMessage = ref(false)
+
+// 차트 에러 상태 관리
+const showChartError = ref(false)
+
+// 날짜 변경 핸들러
+const handleDateChange = () => {
+  if (startDate.value && endDate.value) {
+    const start = new Date(startDate.value)
+    const end = new Date(endDate.value)
+    
+    // 시작일이 종료일보다 늦은 경우 날짜를 교환
+    if (start > end) {
+      const temp = startDate.value
+      startDate.value = endDate.value
+      endDate.value = temp
+    }
+    
+    fetchData()
   }
 }
 
 // 데이터 가져오기
 const fetchData = async () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+  }
+
+  debounceTimer = setTimeout(async () => {
   isLoading.value = true
-  error.value = null
-  
-  try {
-    const formattedStartDate = startDate.value.replace(/-/g, '')
-    const formattedEndDate = endDate.value.replace(/-/g, '')
-    
-    // API 호출
-    let response
     try {
-      response = await axios.get('/finrecom/spot/', {
-        params: {
-          start_date: formattedStartDate,
-          end_date: formattedEndDate,
-          type: selectedAsset.value.toLowerCase() // 소문자로 변환
+      let response;
+      
+      // 날짜가 선택되지 않은 경우 전체 데이터 조회
+      if (!startDate.value || !endDate.value) {
+        response = await axios.get('/finrecom/spot/')
+      } else {
+        const formattedStartDate = format(new Date(startDate.value), 'yyyyMMdd')
+        const formattedEndDate = format(new Date(endDate.value), 'yyyyMMdd')
+        response = await axios.get('/finrecom/spot/' + formattedStartDate + '/' + formattedEndDate + '/')
+      }
+
+      const data = response.data.items
+
+      // 데이터 캐싱
+      cachedData.value = {
+        gold: data.Gold || [],
+        oil: data.Oil || [],
+        carbon: data.Carbon || []
+      }
+
+      // 날짜 범위 설정
+      const allDates = []
+      Object.values(data).forEach(items => {
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            if (item.basDt) {
+              const year = item.basDt.substring(0, 4)
+              const month = item.basDt.substring(4, 6)
+              const day = item.basDt.substring(6, 8)
+              allDates.push(new Date(year + '-' + month + '-' + day))
+            }
+          })
         }
       })
 
-      console.log('API 전체 응답:', response)
-      console.log('응답 데이터 구조:', {
-        data: response.data,
-        type: typeof response.data,
-        keys: Object.keys(response.data || {})
-      })
-    } catch (apiError) {
-      console.error('API 호출 실패:', apiError)
-      if (apiError.response?.status === 500) {
-        error.value = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
-      } else {
-        error.value = '데이터를 불러오는데 실패했습니다.'
+      if (allDates.length > 0) {
+        const minDateTime = new Date(Math.min(...allDates))
+        const maxDateTime = new Date(Math.max(...allDates))
+        
+        minDate.value = format(minDateTime, 'yyyy-MM-dd')
+        maxDate.value = format(maxDateTime, 'yyyy-MM-dd')
+        
+        if (!startDate.value || !endDate.value) {
+          startDate.value = minDate.value
+          endDate.value = maxDate.value
+        }
       }
-      return
-    }
 
-    // 데이터 구조 확인 및 처리
-    if (!response.data) {
-      throw new Error('API 응답이 없습니다.')
-    }
-
-    let rawData = response.data
-    console.log('원본 데이터:', rawData)
-
-    // items 객체에서 데이터 추출
-    let chartData
-    if (rawData.items) {
-      const assetKey = selectedAsset.value.toLowerCase()
-      chartData = rawData.items[assetKey] || []
-      
-      // 응답 데이터가 response.body.items.item 구조인 경우 처리
-      if (chartData.response?.body?.items?.item) {
-        chartData = chartData.response.body.items.item
-      }
-      
-      console.log('선택된 자산:', assetKey)
-      console.log('추출된 데이터:', chartData)
-    } else {
-      console.warn('items 객체를 찾을 수 없음:', rawData)
-      chartData = []
-    }
-
-    if (!Array.isArray(chartData)) {
-      console.error('처리된 데이터가 배열이 아님:', chartData)
-      throw new Error('데이터를 처리할 수 없는 형식입니다.')
-    }
-
-    if (chartData.length === 0) {
-      error.value = '선택한 기간에 데이터가 없습니다.'
-      return
-    }
-
-    updateChart(chartData)
-  } catch (err) {
-    console.error('시세 데이터 처리 실패:', err)
-    error.value = '데이터 처리 중 오류가 발생했습니다.'
+      processAndUpdateChart()
+    } catch (error) {
+      console.error('시세 데이터 가져오기 실패:', error)
   } finally {
     isLoading.value = false
   }
+  }, 300) // 300ms 디바운스
 }
 
-// 차트 초기화
-const initChart = () => {
-  if (!chartContainer.value) return
-  
+// 데이터 처리 및 차트 업데이트
+const processAndUpdateChart = () => {
+  const data = cachedData.value
+  if (!data) return
+
   try {
-    if (chart.value && !chart.value.isDisposed()) {
-      chart.value.dispose()
-    }
-    
-    chart.value = echarts.init(chartContainer.value)
-    
-    // 차트 기본 옵션 설정
-    const baseOption = {
-      grid: {
-        left: '8%',
-        right: '5%',
-        bottom: '12%',
-        top: '5%',
-        containLabel: true
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross'
-        },
-        formatter: (params) => {
-          const date = new Date(params[0].value[0])
-          const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-          const value = params[0].value[1].toLocaleString('ko-KR')
-          return `${formattedDate}<br/>${params[0].seriesName}: ${value}원`
-        }
-      },
-      xAxis: {
-        type: 'time',
-        boundaryGap: false,
-        axisLabel: {
-          formatter: (value) => {
-            const date = new Date(value)
-            return `${date.getMonth() + 1}.${date.getDate()}`
-          }
-        }
-      },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          formatter: (value) => `${value.toLocaleString('ko-KR')}`
-        },
-        scale: true
-      },
-      series: [
-        {
-          name: getAssetLabel(selectedAsset.value),
-          type: 'line',
-          data: [],
-          smooth: true,
-          symbol: 'circle',
-          symbolSize: 6,
-          lineStyle: {
-            width: 2
-          },
-          itemStyle: {
-            color: getAssetColor(selectedAsset.value)
-          }
-        }
-      ]
+    showChartError.value = false
+    let spotData = []
+    switch (currentTab.value) {
+      case 'gold':
+        spotData = data.gold || []
+        break
+      case 'oil':
+        const oilTypes = ['등유', '경유', '휘발유']
+        spotData = oilTypes.map(type => ({
+          type,
+          data: (data.oil || []).filter(item => item.oilCtg === type)
+        }))
+        break
+      case 'carbon':
+        spotData = (data.carbon || []).filter(item => item.itmsNm === 'KAU24')
+        break
     }
 
-    chart.value.setOption(baseOption)
+    // 선택된 기간 내의 데이터만 필터링
+    const startTimestamp = new Date(startDate.value).getTime()
+    const endTimestamp = new Date(endDate.value).getTime()
+
+    let filteredData
+    if (currentTab.value === 'oil') {
+      filteredData = spotData.map(group => ({
+        type: group.type,
+        data: group.data.filter(item => {
+          const itemDate = new Date(
+            item.basDt.substring(0, 4),
+            parseInt(item.basDt.substring(4, 6)) - 1,
+            item.basDt.substring(6, 8)
+          ).getTime()
+          return itemDate >= startTimestamp && itemDate <= endTimestamp
+        })
+      }))
+      
+      // 데이터 존재 여부 확인
+      showNoDataMessage.value = !filteredData.some(group => group.data.length > 0)
+    } else {
+      filteredData = spotData.filter(item => {
+        const itemDate = new Date(
+          item.basDt.substring(0, 4),
+          parseInt(item.basDt.substring(4, 6)) - 1,
+          item.basDt.substring(6, 8)
+        ).getTime()
+        return itemDate >= startTimestamp && itemDate <= endTimestamp
+      })
+      
+      // 데이터 존재 여부 확인
+      showNoDataMessage.value = filteredData.length === 0
+    }
+
+    // 데이터가 있는 경우에만 차트 업데이트
+    if (!showNoDataMessage.value) {
+      let chartData
+      if (currentTab.value === 'oil') {
+        chartData = filteredData.map(group => ({
+          type: group.type,
+          data: group.data.map(item => ({
+            x: new Date(
+              item.basDt.substring(0, 4),
+              parseInt(item.basDt.substring(4, 6)) - 1,
+              item.basDt.substring(6, 8)
+            ).getTime(),
+            y: parseFloat(item.wtAvgPrcDisc)
+          })).sort((a, b) => a.x - b.x)
+        }))
+      } else {
+        chartData = filteredData.map(item => ({
+          x: new Date(
+            item.basDt.substring(0, 4),
+            parseInt(item.basDt.substring(4, 6)) - 1,
+            item.basDt.substring(6, 8)
+          ).getTime(),
+          y: parseFloat(currentTab.value === 'gold' ?
+            (item.clpr || item.basePrice || item.price) :
+            item.clpr)
+        })).sort((a, b) => a.x - b.x)
+      }
+
+      // 현재 시세 정보 업데이트
+      if (currentTab.value === 'oil') {
+        const gasolineData = chartData.find(group => group.type === '휘발유')?.data || []
+        if (gasolineData.length > 0) {
+          updatePriceInfo(gasolineData)
+        }
+      } else if (chartData.length > 0) {
+        updatePriceInfo(chartData)
+      }
+
+      // 차트 업데이트
+      setTimeout(() => {
+        updateChart(chartData)
+      }, 50)
+    } else {
+      // 데이터가 없는 경우 차트 초기화
+      if (chart.value) {
+        chart.value.destroy()
+        chart.value = null
+      }
+      // 가격 정보 초기화
+      currentPrice.value = null
+      priceChange.value = null
+      priceChangePercent.value = null
+    }
   } catch (error) {
-    console.error('차트 초기화 실패:', error)
-    chart.value = null
+    console.error('데이터 처리 중 오류 발생:', error)
+    showChartError.value = true
+    showNoDataMessage.value = true
   }
+}
+
+// 가격 정보 업데이트 함수
+const updatePriceInfo = (data) => {
+  const latestPrice = data[data.length - 1].y
+  const previousPrice = data[data.length - 2]?.y || data[data.length - 1].y
+  
+  currentPrice.value = latestPrice
+  priceChange.value = latestPrice - previousPrice
+  priceChangePercent.value = (priceChange.value / previousPrice) * 100
+}
+
+// 새로고침 핸들러
+const handleRefresh = () => {
+  window.location.reload()
 }
 
 // 차트 업데이트
 const updateChart = (data) => {
-  if (!chart.value || chart.value.isDisposed()) {
-    initChart()
+  // 데이터 유효성 검사
+  if (!data || (Array.isArray(data) && data.length === 0)) {
+    if (chart.value) {
+      chart.value.destroy()
+      chart.value = null
+    }
+    return
   }
 
   try {
-    console.log('차트 데이터 포맷팅 전:', data)
+    showChartError.value = false
+    if (chart.value) {
+      chart.value.destroy()
+      chart.value = null
+    }
 
-    // 데이터 포맷팅
-    const formattedData = data
-      .filter(item => {
-        // 필수 필드 확인
-        const hasDate = item && item.basDt
-        const hasPrice = selectedAsset.value === 'Oil' 
-          ? item.wtAvgPrcCptn !== undefined || item.wt_avg_prc_cptn !== undefined
-          : item.clpr !== undefined
-        return hasDate && hasPrice
-      })
-      .map(item => {
-        // 날짜 변환 (YYYYMMDD 형식)
-        const dateStr = item.basDt
-        const date = new Date(
-          dateStr.substring(0, 4),
-          parseInt(dateStr.substring(4, 6)) - 1,
-          dateStr.substring(6, 8)
-        )
-
-        // 가격 데이터 추출
-        let price
-        if (selectedAsset.value === 'Oil') {
-          price = parseFloat(item.wtAvgPrcCptn || item.wt_avg_prc_cptn)
-        } else {
-          price = parseFloat(item.clpr)
-        }
-
-        // 등락률 추출
-        const change = selectedAsset.value !== 'Oil'
-          ? parseFloat(item.fltRt || item.flt_rt)
-          : null
-
-        return [date.getTime(), price, change]
-      })
-      .sort((a, b) => a[0] - b[0])
-
-    console.log('포맷팅된 데이터:', formattedData)
-
-    if (formattedData.length === 0) {
-      error.value = '선택한 기간에 데이터가 없습니다.'
+    const ctx = chartRef.value?.getContext('2d')
+    if (!ctx) {
+      showChartError.value = true
       return
     }
 
-    const option = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross'
-        },
-        formatter: (params) => {
-          const date = new Date(params[0].value[0])
-          const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-          const value = params[0].value[1].toLocaleString('ko-KR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })
-          const unit = selectedAsset.value === 'Oil' ? '원/L' : '원/g'
-          const change = params[0].value[2] !== null
-            ? `<br/>등락률: ${params[0].value[2] > 0 ? '+' : ''}${params[0].value[2].toFixed(2)}%`
-            : ''
-          return `${formattedDate}<br/>${params[0].seriesName}: ${value}${unit}${change}`
-        }
-      },
-      xAxis: {
-        type: 'time',
-        boundaryGap: false,
-        axisLabel: {
-          formatter: (value) => {
-            const date = new Date(value)
-            return `${date.getMonth() + 1}.${date.getDate()}`
-          }
-        }
-      },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          formatter: (value) => {
-            return value.toLocaleString('ko-KR', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })
-          }
-        },
-        scale: true
-      },
-      series: [{
-        name: getAssetLabel(selectedAsset.value),
-        type: 'line',
-        data: formattedData.map(item => {
-          const [timestamp, price, change] = item
-          const dataItem = selectedAsset.value === 'Oil' 
-            ? [timestamp, price]
-            : [timestamp, price, change]
-          return dataItem
-        }),
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        lineStyle: {
-          width: 3
-        },
-        itemStyle: {
-          color: getAssetColor(selectedAsset.value),
-          borderWidth: 2,
-          borderColor: '#fff',
-          shadowColor: 'rgba(0, 0, 0, 0.2)',
-          shadowBlur: 4
-        },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [{
-              offset: 0,
-              color: getAssetColor(selectedAsset.value) + 'CC' // 시작 색상 (80% 투명도)
-            }, {
-              offset: 1,
-              color: getAssetColor(selectedAsset.value) + '11' // 끝 색상 (7% 투명도)
-            }]
-          }
-        }
-      }]
+    // 데이터셋 구성
+    const datasets = currentTab.value === 'oil'
+      ? data.filter(group => group.data && group.data.length > 0).map(group => ({
+          label: `${group.type} 도매가`,
+          data: group.data,
+          borderColor: group.type === '휘발유' ? 'rgb(239, 68, 68)' :
+                      group.type === '경유' ? 'rgb(59, 130, 246)' :
+                      'rgb(34, 197, 94)',
+          backgroundColor: group.type === '휘발유' ? 'rgba(239, 68, 68, 0.1)' :
+                          group.type === '경유' ? 'rgba(59, 130, 246, 0.1)' :
+                          'rgba(34, 197, 94, 0.1)',
+          fill: true,
+          tension: 0.4
+        }))
+      : [{
+          label: getChartLabel(),
+          data: data,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+
+    // 데이터셋이 비어있으면 차트를 그리지 않음
+    if (datasets.length === 0 || datasets.some(dataset => !dataset.data || dataset.data.length === 0)) {
+      return
     }
 
-    chart.value.setOption(option)
+    chart.value = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 300 // 애니메이션 시간 단축
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MM.dd'
+              }
+            },
+            adapters: {
+              date: {
+                locale: ko
+              }
+            },
+            title: {
+              display: true,
+              text: '날짜'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: getYAxisLabel()
+            },
+            ticks: {
+              callback: function(value) {
+                return formatPrice(value)
+              }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                return context.dataset.label + ': ' + formatPrice(context.parsed.y)
+              }
+            }
+          },
+          legend: {
+            display: currentTab.value === 'oil',
+            position: 'top'
+          }
+        }
+      }
+    })
   } catch (error) {
-    console.error('차트 데이터 업데이트 실패:', error)
-    error.value = '차트 업데이트 중 오류가 발생했습니다.'
+    console.error('차트 업데이트 중 오류 발생:', error)
+    showChartError.value = true
+    if (chart.value) {
+      chart.value.destroy()
+      chart.value = null
+    }
   }
 }
 
-// 자산 관련 헬퍼 함수
-const getAssetLabel = (asset) => {
-  const assetMap = {
-    Gold: '금 시세 (1Kg)',
-    Oil: '석유 시세 (1L)',
-    Carbon: '탄소 시세 (1톤)'
+// 차트 레이블 가져오기
+const getChartLabel = () => {
+  switch (currentTab.value) {
+    case 'gold':
+      return '금 시세'
+    case 'oil':
+      return '석유 도매가'  // 레이블 변경
+    case 'carbon':
+      return 'KAU24 탄소배출권 시세'
   }
-  return assetMap[asset] || asset
 }
 
-const getAssetColor = (asset) => {
-  const colorMap = {
-    Gold: '#FFB800',    // 금색
-    Oil: '#3B82F6',     // 파란색
-    Carbon: '#10B981'   // 녹색
+// Y축 레이블 가져오기
+const getYAxisLabel = () => {
+  switch (currentTab.value) {
+    case 'gold':
+      return '원/g'
+    case 'oil':
+      return '원/L'
+    case 'carbon':
+      return '원/톤'
   }
-  return colorMap[asset] || '#94A3B8'
 }
 
-// 자산 선택
-const selectAsset = (asset) => {
-  const assetTypeMap = {
-    gold: 'Gold',
-    oil: 'Oil',
-    carbon: 'Carbon'
-  }
-  selectedAsset.value = assetTypeMap[asset] || asset
-  fetchData()
+// 가격 포맷팅
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'decimal',
+    maximumFractionDigits: 2
+  }).format(price)
 }
 
-// 날짜 변경 감시
-watch([startDate, endDate], () => {
-  fetchData()
+// 가격 변동에 따른 색상
+const getPriceChangeColor = () => {
+  if (!priceChange.value) return 'text-gray-900'
+  return priceChange.value > 0 ? 'text-red-600' : priceChange.value < 0 ? 'text-blue-600' : 'text-gray-900'
+}
+
+// 탭 변경 감시
+watch(currentTab, () => {
+  processAndUpdateChart()
 })
 
-// 컴포넌트 라이프사이클 훅
-onMounted(async () => {
-  await nextTick()
-  initChart()
-  window.addEventListener('resize', handleResize)
+// 컴포넌트 마운트 시 데이터 가져오기
+onMounted(() => {
   fetchData()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  if (chart.value) {
-    chart.value.dispose()
-    chart.value = null
-  }
 })
 </script>
 
 <style scoped>
-.date-input-container {
-  position: relative;
-}
-
 input[type="date"] {
+  min-width: 160px;
   position: relative;
-  background-color: transparent;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
   cursor: pointer;
 }
 
-input[type="date"]::-webkit-datetime-edit {
-  color: #374151;
-  font-size: 0.875rem;
-  padding: 0;
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
 }
 
-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-  padding: 0;
-  display: flex;
-  align-items: center;
+/* 모바일 대응 */
+@media (max-width: 640px) {
+  input[type="date"] {
+    width: 100%;
+  }
+  
+  .date-range-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .quick-periods {
+    margin-top: 1rem;
+    justify-content: flex-start;
+  }
 }
 
-input[type="date"]::-webkit-datetime-edit-year-field,
-input[type="date"]::-webkit-datetime-edit-month-field,
-input[type="date"]::-webkit-datetime-edit-day-field {
-  padding: 0 2px;
+/* 다크모드 대응 */
+@media (prefers-color-scheme: dark) {
+  input[type="date"] {
+    background-color: rgb(255, 255, 255);
+    border-color: rgb(209, 213, 219);
+  }
 }
 
-input[type="date"]:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+/* 탭 버튼 호버 효과 */
+.tab-button {
+  position: relative;
+  overflow: hidden;
 }
 
-.date-input-container:hover input {
-  border-color: #9ca3af;
+.tab-button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: currentColor;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tab-button:hover::after {
+  width: 100%;
+}
+
+/* 활성 탭 효과 */
+.tab-button.active {
+  position: relative;
+}
+
+.tab-button.active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0.1;
+  border-radius: inherit;
+}
+
+/* 이모티콘 애니메이션 */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+button:hover .text-xl {
+  animation: bounce 0.5s ease infinite;
+}
+
+/* 활성 탭의 이모티콘 크기 증가 */
+button.active .text-xl {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
 }
 </style> 

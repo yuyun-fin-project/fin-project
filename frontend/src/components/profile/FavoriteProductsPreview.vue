@@ -28,7 +28,7 @@
       <div
         v-for="product in displayedProducts"
         :key="product.id"
-        class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer"
+        class="p-4 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
         @click="openProductDetail(product)"
       >
         <div class="flex justify-between items-start">
@@ -42,10 +42,7 @@
           </div>
         </div>
         
-        <div class="mt-2 flex justify-between items-center">
-          <span class="text-sm text-gray-600">
-            최소 {{ formatAmount(product.min_amount) }}원
-          </span>
+        <div class="mt-2 flex justify-end items-center">
           <button 
             @click.stop="removeBookmark(product)"
             class="text-yellow-500 hover:text-yellow-600"
@@ -56,25 +53,35 @@
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- 상품 상세 모달 -->
-    <ProductDetailModal
-      v-if="selectedProduct"
-      :show="showModal"
-      :product="selectedProduct"
-      :is-authenticated="true"
-      :access-token="accessToken"
-      @close="closeModal"
-      @bookmark-updated="handleBookmarkUpdated"
-    />
+      <!-- 펼치기/접기 버튼 -->
+      <div v-if="bookmarkedProducts.length > 3" class="text-center mt-4">
+        <button 
+          @click="toggleExpand"
+          class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+        >
+          <span>{{ isExpanded ? '접기' : '더보기' }}</span>
+          <svg 
+            class="w-4 h-4 ml-1 transition-transform"
+            :class="{ 'transform rotate-180': isExpanded }"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import ProductDetailModal from '../product/ProductDetailModal.vue'
+import { useModalStore } from '../../stores/modalStore'
+import eventBus from '../../utils/eventBus'
 
 const bookmarkedProducts = ref([])
 const isLoading = ref(false)
@@ -82,14 +89,17 @@ const error = ref(null)
 const showModal = ref(false)
 const selectedProduct = ref(null)
 const accessToken = ref(localStorage.getItem('access_token'))
+const modalStore = useModalStore()
+const isExpanded = ref(false)
 
-// 프리뷰에서는 최대 3개만 표시
+// 프리뷰에서는 펼침 상태에 따라 전체 또는 3개만 표시
 const displayedProducts = computed(() => {
-  return bookmarkedProducts.value.slice(0, 3).map(product => ({
+  const products = bookmarkedProducts.value.map(product => ({
     ...product,
     displayRate: calculateMaxRate(product),
     displayPeriod: calculatePeriod(product)
   }))
+  return isExpanded.value ? products : products.slice(0, 3)
 })
 
 // 찜한 상품 목록 가져오기
@@ -125,14 +135,16 @@ const fetchBookmarkedProducts = async () => {
 
           // 옵션 정보도 함께 가져오기
           const options = productResponse.data.results.opt || []
-          const productOptions = options.filter(opt => opt.fin_prdt_cd === product.fin_prdt_cd)
+          const productOptions = options.filter(opt => opt.prd === product.id)
           
           // 옵션 정보 가공
           const processedOptions = productOptions.map(opt => ({
             ...opt,
             save_trm: parseInt(opt.save_trm) || 12,
             intr_rate: parseFloat(opt.intr_rate) || 0,
-            intr_rate2: parseFloat(opt.intr_rate2) || 0
+            intr_rate2: parseFloat(opt.intr_rate2) || 0,
+            rsrv_type_nm: opt.rsrv_type_nm || '자유적립식',
+            intr_rate_type_nm: opt.intr_rate_type_nm || '단리'
           }))
 
           // 원본 데이터 구조 유지
@@ -187,6 +199,17 @@ const removeBookmark = async (product) => {
         'Authorization': `Bearer ${accessToken.value}`
       }
     })
+    
+    // 즉시 목록에서 제거
+    bookmarkedProducts.value = bookmarkedProducts.value.filter(p => p.id !== product.id)
+    
+    // 모달 닫기
+    modalStore.closeModal()
+    
+    // 북마크 수 변경 이벤트 발생
+    eventBus.emit('bookmark-count-updated', bookmarkedProducts.value.length)
+    
+    // 전체 목록 다시 불러오기
     await fetchBookmarkedProducts()
   } catch (error) {
     console.error('찜하기 제거 실패:', error)
@@ -202,8 +225,16 @@ const formatAmount = (amount) => {
 
 // 상품 상세 모달 관련 함수
 const openProductDetail = (product) => {
-  selectedProduct.value = product
-  showModal.value = true
+  modalStore.openProductDetailModal(product, {
+    onBookmarkUpdated: (data) => {
+      if (!data.isBookmarked) {
+        // 찜 해제된 상품을 즉시 목록에서 제거
+        bookmarkedProducts.value = bookmarkedProducts.value.filter(p => p.id !== data.productId)
+        // 북마크 수 변경 이벤트 발생
+        eventBus.emit('bookmark-count-updated', bookmarkedProducts.value.length)
+      }
+    }
+  })
 }
 
 const closeModal = () => {
@@ -215,7 +246,29 @@ const handleBookmarkUpdated = async () => {
   await fetchBookmarkedProducts()
 }
 
+// 펼치기/접기 토글 함수
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value
+}
+
 onMounted(() => {
   fetchBookmarkedProducts()
+  
+  // 모달 스토어 이벤트 구독
+  modalStore.$subscribe((mutation, state) => {
+    if (mutation.type === 'closeModal' && state.lastAction === 'bookmark_update') {
+      fetchBookmarkedProducts().then(() => {
+        // 북마크 수 변경 이벤트 발생
+        eventBus.emit('bookmark-count-updated', bookmarkedProducts.value.length)
+      })
+    }
+  })
+})
+
+// 컴포넌트 언마운트 시 구독 해제
+onUnmounted(() => {
+  if (modalStore.$unsubscribe) {
+    modalStore.$unsubscribe()
+  }
 })
 </script> 

@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const BASE_URL = 'http://localhost:8000'
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -55,16 +55,14 @@ export const articleService = {
       const response = await api.get('/articles/')
       const articles = response.data.results
 
-      // 각 게시글의 작성자 정보 가져오기
-      const articlesWithUsers = await Promise.all(
-        articles.map(async (article) => {
-          const user = await articleService.getUserInfo(article.user_id)
-          return {
-            ...article,
-            user
-          }
-        })
-      )
+      // 각 게시글의 작성자 정보 설정
+      const articlesWithUsers = articles.map(article => ({
+        ...article,
+        user: {
+          id: article.user_id,
+          nickname: article.nickname
+        }
+      }))
 
       return {
         count: response.data.count,
@@ -82,11 +80,12 @@ export const articleService = {
       const response = await api.get(`/articles/${articleId}/`)
       const article = response.data
       
-      // 작성자 정보 가져오기
-      const user = await articleService.getUserInfo(article.user_id)
       return {
         ...article,
-        user
+        user: {
+          id: article.user_id,
+          nickname: article.nickname
+        }
       }
     } catch (error) {
       console.error('게시글 상세 조회 실패:', error)
@@ -94,17 +93,11 @@ export const articleService = {
     }
   },
 
-  // 사용자 정보 가져오기
+  // 사용자 정보 가져오기 (더 이상 사용하지 않음)
   async getUserInfo(userId) {
-    try {
-      const response = await api.get(`/accounts/profile/${userId}/`)
-      return response.data
-    } catch (error) {
-      console.error('사용자 정보 조회 실패:', error)
-      return {
-        nickname: '익명',
-        id: userId
-      }
+    return {
+      id: userId,
+      nickname: `사용자${userId}`  // 혹시 모를 경우를 위한 기본값
     }
   },
 

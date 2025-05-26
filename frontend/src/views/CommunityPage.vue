@@ -152,39 +152,22 @@
         </nav>
       </div>
 
-      <!-- 글쓰기 모달 -->
-      <article-form-modal
-        v-if="isCreateModalOpen"
-        @close="closeCreateModal"
-        @submit="createArticle"
-      />
-
-      <!-- 상세보기 모달 -->
-      <article-detail-modal
-        v-if="selectedArticle"
-        :article="selectedArticle"
-        @close="closeDetailModal"
-        @delete="deleteArticle"
-        @update="updateArticle"
-      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useModalStore } from '@/stores/modalStore'
 import ArticleCard from '@/components/ArticleCard.vue'
-import ArticleFormModal from '@/components/ArticleFormModal.vue'
-import ArticleDetailModal from '@/components/ArticleDetailModal.vue'
 import { articleService } from '@/services/articleService'
 import { debounce } from 'lodash'
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
+const modalStore = useModalStore()
 const articles = ref([])
-const isCreateModalOpen = ref(false)
-const selectedArticle = ref(null)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
@@ -241,23 +224,33 @@ const fetchArticles = async () => {
   }
 }
 
+// 모달 컨트롤
+const handleWriteClick = () => {
+  if (!auth.isAuthenticated) {
+    router.push({ 
+      name: 'Login', 
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
+    return
+  }
+  modalStore.openArticleFormModal({
+    type: 'create',
+    onSubmit: createArticle
+  })
+}
+
+const openDetailModal = (article) => {
+  modalStore.openArticleDetailModal(article)
+}
+
 // 게시글 생성
 const createArticle = async (articleData) => {
   try {
     await articleService.createArticle(articleData)
-    closeCreateModal()
-    // 성공적으로 게시글을 생성한 후에만 목록을 새로고침
-    try {
-      const response = await articleService.getArticles()
-      articles.value = response.results || []
-    } catch (error) {
-      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
-      // 오류가 발생해도 사용자에게는 게시글이 생성되었다는 것을 알림
-      articles.value = []
-    }
+    modalStore.closeArticleFormModal()
+    await fetchArticles()
   } catch (error) {
     console.error('게시글 생성 실패:', error)
-    // 게시글 생성 실패 시 사용자에게 알림
     alert('게시글 생성에 실패했습니다. 다시 시도해주세요.')
   }
 }
@@ -265,16 +258,9 @@ const createArticle = async (articleData) => {
 // 게시글 수정
 const updateArticle = async (articleData) => {
   try {
-    await articleService.updateArticle(selectedArticle.value.id, articleData)
-    closeDetailModal()
-    // 성공적으로 게시글을 수정한 후에만 목록을 새로고침
-    try {
-      const response = await articleService.getArticles()
-      articles.value = response.results || []
-    } catch (error) {
-      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
-      articles.value = []
-    }
+    await articleService.updateArticle(articleData.id, articleData)
+    modalStore.closeArticleDetailModal()
+    await fetchArticles()
   } catch (error) {
     console.error('게시글 수정 실패:', error)
     alert('게시글 수정에 실패했습니다. 다시 시도해주세요.')
@@ -285,52 +271,24 @@ const updateArticle = async (articleData) => {
 const deleteArticle = async (articleId) => {
   try {
     await articleService.deleteArticle(articleId)
-    closeDetailModal()
-    // 성공적으로 게시글을 삭제한 후에만 목록을 새로고침
-    try {
-      const response = await articleService.getArticles()
-      articles.value = response.results || []
-    } catch (error) {
-      console.log('게시글 목록 새로고침 중 오류가 발생했습니다.')
-      articles.value = []
-    }
+    modalStore.closeArticleDetailModal()
+    await fetchArticles()
   } catch (error) {
     console.error('게시글 삭제 실패:', error)
     alert('게시글 삭제에 실패했습니다. 다시 시도해주세요.')
   }
 }
 
-// 모달 컨트롤
-const openCreateModal = () => {
-  isCreateModalOpen.value = true
-}
-
-const handleWriteClick = () => {
-  if (!auth.isAuthenticated) {
-    // 현재 페이지 URL을 저장하여 로그인 후 돌아올 수 있도록 함
-    router.push({ 
-      name: 'Login', 
-      query: { redirect: router.currentRoute.value.fullPath }
-    })
-    return
-  }
-  openCreateModal()
-}
-
-const closeCreateModal = () => {
-  isCreateModalOpen.value = false
-}
-
-const openDetailModal = (article) => {
-  selectedArticle.value = article
-}
-
-const closeDetailModal = () => {
-  selectedArticle.value = null
-}
-
 onMounted(() => {
   fetchArticles()
+  
+  // 게시글 목록 새로고침 이벤트 리스너 등록
+  window.addEventListener('refresh-articles', fetchArticles)
+})
+
+// 컴포넌트 언마운트 시 이벤트 리스너 제거
+onUnmounted(() => {
+  window.removeEventListener('refresh-articles', fetchArticles)
 })
 </script>
 

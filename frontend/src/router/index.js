@@ -99,20 +99,21 @@ router.beforeEach(async (to, from, next) => {
     
     // 토큰 유효성 검사
     try {
-      await authStore.checkAuth()
+      const isValid = await authStore.checkAuth()
+      if (!isValid) {
+        next({ name: 'Login', query: { redirect: to.fullPath } })
+        return
+      }
       next()
     } catch (error) {
       console.error('인증 확인 실패:', error)
       next({ name: 'Login', query: { redirect: to.fullPath } })
     }
   } else {
-    // 페이지 전환 시작 시 처리
-    if (from.name === 'Home') {
-      // 홈에서 다른 페이지로 이동할 때 캐시 초기화
-      const toComponent = await to.matched[0].components?.default;
-      if (toComponent) {
-        delete toComponent.__vccOpts;
-      }
+    // 로그인 페이지로 이동할 때 이미 인증된 상태라면 홈으로 리다이렉트
+    if (to.name === 'Login' && authStore.isAuthenticated) {
+      next({ name: 'Home' })
+      return
     }
     next()
   }

@@ -1,7 +1,8 @@
 <template>
-  <div class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+  <div class="article-form-modal">
+    <div class="modal-overlay"></div>
     <div class="modal-content bg-white rounded-lg p-6 w-full max-w-2xl">
-      <h2 class="text-2xl font-bold mb-4">{{ isEdit ? '게시글 수정' : '새 게시글 작성' }}</h2>
+      <h2 class="text-2xl font-bold mb-4 text-black">{{ isEdit ? '게시글 수정' : '새 게시글 작성' }}</h2>
       
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>

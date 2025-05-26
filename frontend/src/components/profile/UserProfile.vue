@@ -9,8 +9,10 @@
           </svg>
         </div>
         <div>
-          <h3 class="text-lg font-medium text-gray-900">{{ user.nickname }}</h3>
-          <p class="text-sm text-gray-500">{{ user.useremail }}</p>
+          <h3 class="text-lg font-medium text-gray-900">
+            {{ displayName }}
+          </h3>
+          <p class="text-sm text-gray-500">{{ user.useremail || user.email }}</p>
         </div>
       </div>
       
@@ -18,11 +20,11 @@
         <div class="grid grid-cols-2 gap-4 text-center">
           <div>
             <p class="text-sm text-gray-500">작성한 글</p>
-            <p class="text-lg font-semibold text-gray-900">{{ user.articles?.length || 0 }}</p>
+            <p class="text-lg font-semibold text-gray-900">{{ articleCount }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">작성한 댓글</p>
-            <p class="text-lg font-semibold text-gray-900">{{ user.comments?.length || 0 }}</p>
+            <p class="text-sm text-gray-500">찜한 상품</p>
+            <p class="text-lg font-semibold text-gray-900">{{ localBookmarkCount || 0 }}</p>
           </div>
         </div>
       </div>
@@ -34,10 +36,49 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import eventBus from '../../utils/eventBus'
+
+const props = defineProps({
   user: {
     type: Object,
     required: true
+  },
+  articleCount: {
+    type: Number,
+    default: 0
+  },
+  bookmarkCount: {
+    type: Number,
+    default: 0
   }
+})
+
+const localBookmarkCount = ref(props.bookmarkCount)
+
+// props의 bookmarkCount가 변경될 때 localBookmarkCount 업데이트
+watch(() => props.bookmarkCount, (newCount) => {
+  localBookmarkCount.value = newCount
+})
+
+// 북마크 수 변경 이벤트 핸들러
+const handleBookmarkCountUpdate = (count) => {
+  localBookmarkCount.value = count
+}
+
+// 컴포넌트 마운트 시 이벤트 구독
+onMounted(() => {
+  eventBus.on('bookmark-count-updated', handleBookmarkCountUpdate)
+})
+
+// 컴포넌트 언마운트 시 이벤트 구독 해제
+onUnmounted(() => {
+  eventBus.off('bookmark-count-updated', handleBookmarkCountUpdate)
+})
+
+// 사용자 표시 이름 계산
+const displayName = computed(() => {
+  if (!props.user) return '사용자'
+  return props.user.nickname || props.user.useremail || '사용자'
 })
 </script> 

@@ -1,187 +1,193 @@
 <template>
   <div class="home-page">
     <!-- 히어로 섹션 -->
-    <section class="hero-section relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-      <div class="max-w-6xl mx-auto px-4 py-20 relative z-10">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
-          <div
-            v-motion
-            :initial="{ opacity: 0, x: -40 }"
-            :enter="{ opacity: 1, x: 0 }"
-            :delay="200"
-          >
-            <h1 class="text-4xl md:text-5xl font-bold mb-6">
-              스마트한 금융 생활의 시작
-            </h1>
-            <p class="text-xl mb-8 text-blue-100">
-              AI가 추천하는 맞춤형 금융상품으로<br>
-              더 나은 수익을 경험하세요
-            </p>
-            <router-link
-              to="/recommend"
-              class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+    <div
+      v-motion
+      :initial="{ opacity: 0, y: 40 }"
+      :enter="{ opacity: 1, y: 0 }"
+      :delay="300"
+      :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
+      class="w-full"
+    >
+      <section class="hero-section relative overflow-hidden bg-gradient-to-br from-blue-500/80 via-blue-600/70 to-transparent">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-blue-600/40 to-white/90"></div>
+        <div class="max-w-6xl mx-auto px-4 py-20 relative z-10">
+          <div class="grid md:grid-cols-2 gap-8 items-center">
+            <div
+              v-motion
+              :initial="{ opacity: 0, x: -40 }"
+              :enter="{ opacity: 1, x: 0 }"
+              :delay="400"
             >
-              AI 추천 받기
-            </router-link>
-          </div>
-          <div
-            v-motion
-            :initial="{ opacity: 0, scale: 0.9 }"
-            :enter="{ opacity: 1, scale: 1 }"
-            :delay="400"
-            class="hidden md:block"
-          >
-            <img src="@/assets/finance-hero.svg" alt="금융 이미지" class="w-full">
-          </div>
-        </div>
-      </div>
-      <!-- 배경 장식 -->
-      <div class="absolute top-0 right-0 w-1/2 h-full opacity-10">
-        <div class="absolute inset-0 bg-pattern transform rotate-12 scale-150"></div>
-      </div>
-    </section>
-
-    <!-- 주요 기능 소개 -->
-    <section class="py-20 bg-white">
-      <div class="max-w-6xl mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-12 text-black">주요 기능</h2>
-        <div class="grid md:grid-cols-3 gap-8">
-          <div
-            v-for="(feature, index) in features"
-            :key="index"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0 }"
-            :delay="200 + (index * 100)"
-            class="bg-white p-6 text-black rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
-          >
-            <div class="text-3xl mb-4">{{ feature.icon }}</div>
-            <h3 class="text-xl font-semibold mb-2">{{ feature.title }}</h3>
-            <p class="text-gray-600">{{ feature.description }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 실시간 금융 정보 -->
-    <section class="py-20 bg-gray-50">
-      <div class="max-w-6xl mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-12 text-black">실시간 금융 정보</h2>
-        <div class="grid md:grid-cols-2 gap-8">
-          <!-- 경제 뉴스 -->
-          <div
-            v-motion
-            :initial="{ opacity: 0, x: -20 }"
-            :enter="{ opacity: 1, x: 0 }"
-            :delay="200"
-            class="bg-white p-6 rounded-xl shadow-sm"
-          >
-            <h3 class="text-xl font-semibold mb-4 text-black">경제 뉴스</h3>
-            <economic-news-list />
-          </div>
-          
-          <!-- 시장 동향 -->
-          <div
-            v-motion
-            :initial="{ opacity: 0, x: 20 }"
-            :enter="{ opacity: 1, x: 0 }"
-            :delay="300"
-            class="bg-white p-6 rounded-xl shadow-sm"
-          >
-            <h3 class="text-xl font-semibold mb-4 text-black">시장 동향</h3>
-            <market-trend-list :trends="marketTrends" />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 커뮤니티 섹션 -->
-    <section class="py-20 bg-white">
-      <div class="max-w-6xl mx-auto px-4">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold mb-4 text-black">금융 커뮤니티</h2>
-          <p class="text-gray-600">다른 투자자들과 정보를 공유하고 소통하세요</p>
-        </div>
-        <div class="grid md:grid-cols-2 gap-8">
-          <!-- 인기 게시글 -->
-          <div
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0 }"
-            :delay="200"
-            class="space-y-4 text-black"
-          >
-            <article
-              v-for="post in popularPosts"
-              :key="post.id"
-              class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 cursor-pointer"
-              @click="goToPost(post.id)"
+              <h1 class="text-4xl md:text-5xl font-bold mb-6 text-white/90">
+                스마트한 금융 생활의 시작
+              </h1>
+              <p class="text-xl mb-8 text-blue-50/90">
+                AI가 추천하는 맞춤형 금융상품으로<br>
+                더 나은 수익을 경험하세요
+              </p>
+              <router-link
+                to="/recommend"
+                class="inline-block bg-white/90 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-white transition-colors"
+              >
+                AI 추천 받기
+              </router-link>
+            </div>
+            <div
+              v-motion
+              :initial="{ opacity: 0, scale: 0.9 }"
+              :enter="{ opacity: 1, scale: 1 }"
+              :delay="500"
+              class="hidden md:block"
             >
-              <h3 class="font-semibold text-lg mb-2">{{ post.title }}</h3>
-              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ post.content }}</p>
-              <div class="flex items-center text-sm text-gray-500">
-                <span>{{ post.author }}</span>
-                <span class="mx-2">·</span>
-                <span>조회 {{ post.views }}</span>
-              </div>
-            </article>
-          </div>
-          
-          <!-- 커뮤니티 통계 -->
-          <div
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0 }"
-            :delay="300"
-            class="bg-white p-6 rounded-xl shadow-sm text-black border border-gray-100"
-          >
-            <h3 class="text-xl font-semibold mb-6">커뮤니티 통계</h3>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalPosts }}</div>
-                <div class="text-gray-600">총 게시글</div>
-              </div>
-              <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalUsers }}</div>
-                <div class="text-gray-600">활성 사용자</div>
-              </div>
-              <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.todayPosts }}</div>
-                <div class="text-gray-600">오늘 작성글</div>
-              </div>
-              <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalComments }}</div>
-                <div class="text-gray-600">총 댓글</div>
-              </div>
+              <img src="@/assets/finance-hero.svg" alt="금융 이미지" class="w-full">
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- CTA 섹션 -->
-    <section class="py-20 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-      <div class="max-w-4xl mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold mb-6">지금 시작하세요</h2>
-        <p class="text-xl mb-8 text-blue-100">
-          AI 기반 금융 상품 추천으로 더 나은 투자를 경험하세요
-        </p>
-        <div class="space-x-4">
-          <router-link
-            to="/register"
-            class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-          >
-            회원가입
-          </router-link>
-          <router-link
-            to="/ai"
-            class="inline-block bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-          >
-            AI 추천 받기
-          </router-link>
+        <!-- 배경 장식 -->
+        <div class="absolute top-0 right-0 w-1/2 h-full opacity-10">
+          <div class="absolute inset-0 bg-pattern transform rotate-12 scale-150"></div>
         </div>
+      </section>
+
+      <div class="max-w-6xl mx-auto px-4">
+        <!-- 주요 기능 소개 -->
+        <section class="mb-12 mt-12">
+          <h2 class="text-3xl font-bold text-center mb-12 text-gray-900">주요 기능</h2>
+          <div class="grid md:grid-cols-3 gap-8">
+            <div
+              v-for="(feature, index) in features"
+              :key="index"
+              v-motion
+              :initial="{ opacity: 0, y: 20 }"
+              :enter="{ opacity: 1, y: 0 }"
+              :delay="600 + (index * 100)"
+              class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+            >
+              <div class="text-3xl mb-4">{{ feature.icon }}</div>
+              <h3 class="text-xl font-semibold mb-2 text-gray-900">{{ feature.title }}</h3>
+              <p class="text-gray-600">{{ feature.description }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 실시간 금융 정보 -->
+        <section class="mb-12">
+          <h2 class="text-3xl font-bold text-center mb-12 text-gray-900">실시간 금융 정보</h2>
+          <div class="grid md:grid-cols-2 gap-8">
+            <!-- 경제 뉴스 -->
+            <div
+              v-motion
+              :initial="{ opacity: 0, x: -20 }"
+              :enter="{ opacity: 1, x: 0 }"
+              :delay="800"
+              class="bg-white p-6 rounded-xl shadow-sm"
+            >
+              <h3 class="text-xl font-semibold mb-4 text-gray-900">경제 뉴스</h3>
+              <economic-news-list />
+            </div>
+            
+            <!-- 시장 동향 -->
+            <div
+              v-motion
+              :initial="{ opacity: 0, x: 20 }"
+              :enter="{ opacity: 1, x: 0 }"
+              :delay="900"
+              class="bg-white p-6 rounded-xl shadow-sm"
+            >
+              <h3 class="text-xl font-semibold mb-4 text-gray-900">시장 동향</h3>
+              <market-trend-list :trends="marketTrends" />
+            </div>
+          </div>
+        </section>
+
+        <!-- 커뮤니티 섹션 -->
+        <section class="mb-12">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4 text-gray-900">금융 커뮤니티</h2>
+            <p class="text-gray-600">다른 투자자들과 정보를 공유하고 소통하세요</p>
+          </div>
+          <div class="grid md:grid-cols-2 gap-8">
+            <!-- 인기 게시글 -->
+            <div
+              v-motion
+              :initial="{ opacity: 0, y: 20 }"
+              :enter="{ opacity: 1, y: 0 }"
+              :delay="1000"
+              class="space-y-4"
+            >
+              <article
+                v-for="post in popularPosts"
+                :key="post.id"
+                class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 cursor-pointer"
+                @click="goToPost(post.id)"
+              >
+                <h3 class="font-semibold text-lg mb-2 text-gray-900">{{ post.title }}</h3>
+                <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ post.content }}</p>
+                <div class="flex items-center text-sm text-gray-500">
+                  <span>{{ post.author }}</span>
+                  <span class="mx-2">·</span>
+                  <span>조회 {{ post.views }}</span>
+                </div>
+              </article>
+            </div>
+            
+            <!-- 커뮤니티 통계 -->
+            <div
+              v-motion
+              :initial="{ opacity: 0, y: 20 }"
+              :enter="{ opacity: 1, y: 0 }"
+              :delay="1100"
+              class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+            >
+              <h3 class="text-xl font-semibold mb-6 text-gray-900">커뮤니티 통계</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalPosts }}</div>
+                  <div class="text-gray-600">총 게시글</div>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalUsers }}</div>
+                  <div class="text-gray-600">활성 사용자</div>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.todayPosts }}</div>
+                  <div class="text-gray-600">오늘 작성글</div>
+                </div>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-3xl font-bold text-blue-600 mb-2">{{ communityStats.totalComments }}</div>
+                  <div class="text-gray-600">총 댓글</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA 섹션 -->
+        <section class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl text-white">
+          <div class="max-w-4xl mx-auto px-8 py-16 text-center">
+            <h2 class="text-3xl font-bold mb-6">지금 시작하세요</h2>
+            <p class="text-xl mb-8 text-blue-100">
+              AI 기반 금융 상품 추천으로 더 나은 투자를 경험하세요
+            </p>
+            <div class="space-x-4">
+              <router-link
+                to="/register"
+                class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+              >
+                회원가입
+              </router-link>
+              <router-link
+                to="/recommend"
+                class="inline-block bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                AI 추천 받기
+              </router-link>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
@@ -268,15 +274,7 @@ const goToPost = (postId) => {
 
 <style scoped>
 .home-page {
-  @apply min-h-screen;
-}
-
-.loading {
-  @apply flex items-center justify-center min-h-[200px];
-}
-
-.loading-spinner {
-  @apply w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin;
+  @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
 }
 
 .bg-pattern {
