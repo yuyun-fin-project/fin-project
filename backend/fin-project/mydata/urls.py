@@ -20,4 +20,5 @@ from . import views
 
 urlpatterns = [
     path('', views.get_mydata),
+    path('ai/', views.analyze_and_recommend),
 ]
