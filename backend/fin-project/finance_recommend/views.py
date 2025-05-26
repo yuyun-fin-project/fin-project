@@ -89,6 +89,7 @@ def get_spot(request, start_date=None, end_date=None):
     print(api_responses)
     for idx, (response, spot) in enumerate(zip(api_responses, serializers)):
         print(f"Processing {spot[2]}...")
+        print(response.text)
         try:
             # JSON 파싱 안전 처리
             try:

@@ -57,6 +57,7 @@ class OptionSerializer(serializers.ModelSerializer):
             'id',
             'fin_prdt_cd',  # 클라이언트에서만 쓰고 DB에는 저장하지 않음
             'prd',
+            'save_trm',
             'intr_rate_type',
             'intr_rate_type_nm',
             'rsrv_type',
@@ -76,7 +77,9 @@ class OptionSerializer(serializers.ModelSerializer):
 
         # prd로 연결해서 Option 저장
         option = Option.objects.create(prd=product, **validated_data)
+
         return option
+
 
 '''
 {'basDt': '20250522',

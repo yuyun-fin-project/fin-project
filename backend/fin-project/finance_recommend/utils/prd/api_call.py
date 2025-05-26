@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 from django.conf import settings
 from rest_framework.decorators import api_view
+from pprint import pprint
 
 load_dotenv()
 
@@ -26,7 +27,6 @@ def api_call():
     }
     
     saving_response = requests.get(URL, params=params).json()
-    print(saving_response)
     return deposit_response, saving_response
 
 

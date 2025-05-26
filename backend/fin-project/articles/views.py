@@ -6,12 +6,12 @@ from .models import Article, Comment
 from .serializers import ArticleSerializer, CommentSerializer
 # 권한 별 접근 관리
 from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
-
+# get, post 함수 나누기
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
 def article_get_or_create(request):
     if request.method == 'GET':
         articles = Article.objects.all()
@@ -21,10 +21,14 @@ def article_get_or_create(request):
             "results": serializer.data
         })
     elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            raise PermissionDenied("로그인이 필요합니다.")
         serializer = ArticleSerializer(data=request.POST)
         if serializer.is_valid(raise_exception=True):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
