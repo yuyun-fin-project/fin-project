@@ -29,7 +29,7 @@
             </div>
             <div>
                 <p class="font-medium text-gray-800">월 소비액 확인 중...</p>
-                <p class="text-sm text-gray-500">귀하의 월별 소비 내역을 분석하고 있습니다.</p>
+                <p class="text-sm text-gray-500">월별 소비 내역을 분석하고 있습니다.</p>
             </div>
         </div>
         
