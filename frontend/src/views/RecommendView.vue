@@ -313,13 +313,13 @@ axios.defaults.baseURL = 'http://localhost:8000'
 const getRecommendations = async () => {
   loading.value = true
   try {
-    const token = getToken()
+    // const token = getToken()
 
-    if (!token) {
-      alert('로그인이 필요한 서비스입니다.')
-      router.push('/login')
-      return
-    }
+    // if (!token) {
+    //   alert('로그인이 필요한 서비스입니다.')
+    //   router.push('/login')
+    //   return
+    // }
 
     const params = {
       product_type: formData.value.product_type,
@@ -330,18 +330,18 @@ const getRecommendations = async () => {
     // 1. 추천 상품 목록 조회
     const recommendResponse = await axios.get('/finrecom/recommend/', {
       params,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      // headers: {
+      //   'Authorization': `Bearer ${token}`
+      // }
     })
 
     console.log('추천 API 응답:', recommendResponse.data)
 
     // 2. 전체 상품 목록 조회
     const productsResponse = await axios.get('/finrecom/', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      // headers: {
+      //   'Authorization': `Bearer ${token}`
+      // }
     })
 
     const allProducts = productsResponse.data.results.prd || []

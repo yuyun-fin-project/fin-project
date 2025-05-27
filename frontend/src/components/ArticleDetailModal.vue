@@ -35,8 +35,27 @@
               </span>
             </button>
           </div>
+          <div v-else>
+            <div class="space-x-2">
+              <button
+                @click="likeorUnlike"
+                class="px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+                v-if="!localIsLiked"
+              >
+                <span class="flex items-center">좋아요</span>
+              </button>
+
+              <button
+                @click="likeorUnlike"
+                class="px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+                v-else
+              >
+                <span class="flex items-center">좋아요 취소</span>
+              </button>
+          </div>
         </div>
-        
+        </div>
+
         <div class="mb-6 text-sm text-gray-500 flex items-center space-x-4">
           <span class="flex items-center">
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,24 +102,61 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import ArticleFormModal from './ArticleFormModal.vue'
+import axios from 'axios'
 
 const props = defineProps({
   article: {
     type: Object,
     required: true
-  }
+  },
+  is_liked: {
+    type: Boolean,
+    default: false
+  },
 })
+
+console.log(props)
 
 const emit = defineEmits(['close', 'delete', 'update'])
 const auth = useAuthStore()
 const isEditing = ref(false)
+const accessToken = ref(localStorage.getItem('access_token'))
+const localIsLiked = ref(props.is_liked)
+
+// Update local state when props change
+watch(() => props.is_liked, (newVal) => {
+  localIsLiked.value = newVal
+})
 
 const isAuthor = computed(() => {
   return auth.user?.id === props.article.user?.id
 })
+
+const likeorUnlike = async () => {
+  try {
+    const response = await axios.post(
+      `http://127.0.0.1:8000/articles/like/${props.article.id}/`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken.value}`
+        }
+      }
+    )
+    // 서버 응답에서 "liked" 필드로 받아오기!
+    localIsLiked.value = response.data.liked;
+    console.log('Like updated:', response.data);
+  } catch (error) {
+    console.error('Error updating like:', error);
+    if (error.response?.status === 401) {
+      alert('로그인이 필요합니다.');
+    }
+  }
+}
+
 
 const formatDate = (dateString) => {
   if (!dateString) return '날짜 없음'
@@ -135,4 +191,6 @@ const handleUpdate = (articleData) => {
   })
   isEditing.value = false
 }
+
+
 </script> 

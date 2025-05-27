@@ -109,29 +109,33 @@
           </div>
           <div class="grid md:grid-cols-2 gap-8">
             <!-- 인기 게시글 -->
-            <div
-              v-motion
-              :initial="{ opacity: 0, y: 20 }"
-              :enter="{ opacity: 1, y: 0 }"
-              :delay="1000"
-              class="space-y-4"
-            >
-              <article
-                v-for="post in popularPosts"
-                :key="post.id"
-                class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 cursor-pointer"
-                @click="goToPost(post.id)"
-              >
-                <h3 class="font-semibold text-lg mb-2 text-gray-900">{{ post.title }}</h3>
-                <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ post.content }}</p>
-                <div class="flex items-center text-sm text-gray-500">
-                  <span>{{ post.author }}</span>
-                  <span class="mx-2">·</span>
-                  <span>조회 {{ post.views }}</span>
-                </div>
-              </article>
+          <div
+            v-motion
+            :initial="{ opacity: 0, y: 20 }"
+            :enter="{ opacity: 1, y: 0 }"
+            :delay="1000"
+            class="space-y-4"
+          >
+            <div v-if="popularPosts.length === 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <p class="text-gray-600 text-center py-4">첫 번째 글을 작성해 보세요!</p>
             </div>
-            
+            <article
+              v-else
+              v-for="post in popularPosts"
+              :key="post.id"
+              class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 cursor-pointer"
+              @click="goToPost(post.id)"
+            >
+              <h3 class="font-semibold text-lg mb-2 text-gray-900">{{ post.title }}</h3>
+              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ post.content }}</p>
+              <div class="flex items-center text-sm text-gray-500">
+                <span>{{ post.author }}</span>
+                <span class="mx-2">·</span>
+                <span>좋아요 {{ post.likeCount }}</span>
+              </div>
+            </article>
+          </div>
+                      
             <!-- 커뮤니티 통계 -->
             <div
               v-motion
@@ -173,7 +177,7 @@
             <div class="space-x-4">
               <router-link
                 to="/register"
-                class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                class="inline-block bg-white text-blue-600 border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
               >
                 회원가입
               </router-link>
@@ -192,12 +196,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onActivated } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import MarketTrendList from '@/components/MarketTrendList.vue'
 import EconomicNewsList from '@/components/EconomicNewsList.vue'
+import axios from 'axios'
 
 const router = useRouter()
+const route = useRoute()
 
 // Simulate async setup for consistency with other pages
 await new Promise(resolve => setTimeout(resolve, 0));
@@ -242,34 +248,94 @@ const marketTrends = ref([
 
 // 인기 게시글 데이터
 const popularPosts = ref([
-  {
-    id: 1,
-    title: '2024년 금리 전망과 투자 전략',
-    content: '올해 금리는 어떻게 될까요? 전문가들의 의견을 종합해보았습니다...',
-    author: '금융전문가',
-    views: 1234
-  },
-  {
-    id: 2,
-    title: '적금 vs 예금, 어떤 것이 유리할까?',
-    content: '목적과 기간에 따른 적금과 예금의 장단점을 비교해보았습니다...',
-    author: '재테크고수',
-    views: 982
-  }
+  // {
+  //   id: 1,
+  //   title: '2024년 금리 전망과 투자 전략',
+  //   content: '올해 금리는 어떻게 될까요? 전문가들의 의견을 종합해보았습니다...',
+  //   author: '금융전문가',
+  //   views: 1234
+  // },
+  // {
+  //   id: 2,
+  //   title: '적금 vs 예금, 어떤 것이 유리할까?',
+  //   content: '목적과 기간에 따른 적금과 예금의 장단점을 비교해보았습니다...',
+  //   author: '재테크고수',
+  //   views: 982
+  // }
 ])
 
 // 커뮤니티 통계 데이터
 const communityStats = ref({
-  totalPosts: '1,234',
-  totalUsers: '567',
-  todayPosts: '89',
-  totalComments: '4,321'
+  totalPosts: '0',
+  totalUsers: '0',
+  todayPosts: '0',
+  totalComments: '0'
 })
 
 // 게시글 상세 페이지로 이동
 const goToPost = (postId) => {
-  router.push(`/community/article/${postId}`)
+  router.push(`/community/`)
 }
+
+// 커뮤니티 통계 가져오기
+const fetchCommunityStats = async () => {
+  try {
+    const response = await axios.get(
+      'http://127.0.0.1:8000/articles/community/stats/'
+    )
+    
+    if (response.data) {
+      communityStats.value = {
+        totalPosts: response.data.total_posts?.toString() || '0',
+        totalUsers: response.data.total_users?.toString() || '0',
+        todayPosts: response.data.today_posts?.toString() || '0',
+        totalComments: response.data.total_comments?.toString() || '0'
+      }
+      console.log('Updated community stats:', communityStats.value)
+    }
+  } catch (error) {
+    console.error('커뮤니티 통계를 불러오는데 실패했습니다:', error)
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error:', error.message);
+    }
+  }
+}
+
+const fetchCommunityarticles = async () => {
+  try {
+    const response = await axios.get(
+      'http://127.0.0.1:8000/articles/community/recentpost/'
+    );
+    if (response.data && response.data.recent_articles) {
+      console.log(response.data.recent_articles);
+
+      // 앞 2개만 추출해서 매핑 후 popularPosts에 할당
+      popularPosts.value = response.data.recent_articles
+        .slice(0, 2) // 앞 2개만!
+        .map(article => ({
+          id: article.id,
+          title: article.title,
+          content: article.content,
+          author: article.nickname,
+          likeCount: article.like_count
+        }));
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// 컴포넌트 마운트 시 통계 데이터 가져오기
+onMounted(() => {
+  console.log('Component mounted, fetching stats...')
+  fetchCommunityStats()
+  fetchCommunityarticles()
+})
+
 </script>
 
 <style scoped>
@@ -282,5 +348,3 @@ const goToPost = (postId) => {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 </style>
-
-
