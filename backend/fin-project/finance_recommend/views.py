@@ -264,7 +264,7 @@ def product_bookmark_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def recommend_view(request):
     product_type = request.GET.get("product_type", "D")
     user_query = request.GET.get("query", "")

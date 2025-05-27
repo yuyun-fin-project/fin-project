@@ -3,6 +3,7 @@ from django.conf import settings
 
 class Article(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='articles')
+    like_users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='like_articles')
     title = models.CharField(max_length=30)
     content = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)

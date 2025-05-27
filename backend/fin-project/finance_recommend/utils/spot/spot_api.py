@@ -46,10 +46,11 @@ def spot_api(start_date, end_date):
             'params': {
                 'serviceKey': api_key,
                 'pageNo': '1',
-                'numOfRows': 16*date_diff,
+                'numOfRows': 1*date_diff,
                 'resultType': 'json',
                 'beginBasDt': start_date,
-                'endBasDt': end_date
+                'endBasDt': end_date,
+                'itmsNm': "KAU24",
             }
         }
     ]
