@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from datetime import datetime
 
 BASE_URL = 'http://127.0.0.1:8080'
-# BASE_URL = 'http://13.125.217.104/'
+# BASE_URL = 'http://13.125.217.104:8000/'
 
 def get_card_list(request):
     URL = BASE_URL + '/generate/'

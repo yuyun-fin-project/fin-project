@@ -155,44 +155,39 @@ const uniqueOptions = computed(() => {
   // 0개월 제외하고 가입기간 순으로 정렬
   const sortedOptions = [...props.product.options]
     .filter(opt => parseInt(opt.save_trm) > 0) // 0개월 제외
-    .sort((a, b) => {
-      return (parseInt(a.save_trm) || 0) - (parseInt(b.save_trm) || 0)
-    })
+    .map(opt => ({
+      ...opt,
+      save_trm: parseInt(opt.save_trm),
+      intr_rate: parseFloat(opt.intr_rate) || 0,
+      intr_rate2: parseFloat(opt.intr_rate2) || 0
+    }))
 
   const uniqueMap = new Map()
   
+  // 각 save_trm에 대해 가장 높은 금리를 가진 옵션 선택
   sortedOptions.forEach(opt => {
-    const key = getOptionKey(opt)
-    if (!uniqueMap.has(key)) {
-      uniqueMap.set(key, {
-        ...opt,
-        save_trm: parseInt(opt.save_trm),
-        intr_rate: parseFloat(opt.intr_rate) || 0,
-        intr_rate2: parseFloat(opt.intr_rate2) || 0
-      })
+    const currentMaxRate = Math.max(opt.intr_rate, opt.intr_rate2)
+    
+    if (!uniqueMap.has(opt.save_trm)) {
+      uniqueMap.set(opt.save_trm, opt)
     } else {
-      // 이미 존재하는 경우, 더 높은 금리를 가진 옵션으로 업데이트
-      const existing = uniqueMap.get(key)
+      const existing = uniqueMap.get(opt.save_trm)
       const existingMaxRate = Math.max(existing.intr_rate, existing.intr_rate2)
-      const newMaxRate = Math.max(parseFloat(opt.intr_rate) || 0, parseFloat(opt.intr_rate2) || 0)
       
-      if (newMaxRate > existingMaxRate) {
-        uniqueMap.set(key, {
-          ...opt,
-          save_trm: parseInt(opt.save_trm),
-          intr_rate: parseFloat(opt.intr_rate) || 0,
-          intr_rate2: parseFloat(opt.intr_rate2) || 0
-        })
+      if (currentMaxRate > existingMaxRate) {
+        uniqueMap.set(opt.save_trm, opt)
       }
     }
   })
 
+  // 기간순으로 정렬하여 반환
   return Array.from(uniqueMap.values())
+    .sort((a, b) => a.save_trm - b.save_trm)
 })
 
-// 옵션의 고유 키 생성
+// 옵션의 고유 키 생성 (이제는 save_trm만 사용)
 const getOptionKey = (option) => {
-  return `${option.save_trm}-${option.rsrv_type_nm}-${option.intr_rate_type_nm}`
+  return option.save_trm.toString()
 }
 
 // 금리에 따른 색상 반환
