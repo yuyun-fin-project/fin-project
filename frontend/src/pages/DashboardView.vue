@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-view">
+  <div class="dashboard-page">
     <div
       v-motion
       :key="'community-content'"
@@ -7,7 +7,7 @@
       :enter="{ opacity: 1, y: 0 }"
       :delay="300"
       :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
-      class="max-w-6xl mx-auto px-4 py-12"
+      class="dashboard-container"
     >
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
@@ -89,5 +89,15 @@ const isCurrentPath = (path) => {
 
 .shadow-sm {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-page {
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem; /* 헤더 높이만큼 위로 올림 */
+  padding-top: 5rem; /* 헤더 영역만큼 패딩 추가 */
+}
+
+.dashboard-container {
+  @apply max-w-6xl mx-auto px-4 py-8;
 }
 </style> 

@@ -200,6 +200,20 @@ onMounted(async () => {
 
 <style scoped>
 .products-view {
-  @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem;
+  padding-top: 5rem;
+}
+
+.product-comparison-container {
+  @apply container mx-auto px-4 py-8;
+}
+
+.comparison-title {
+  @apply text-3xl font-bold text-center mb-8;
+}
+
+.filters-section {
+  @apply bg-white rounded-lg shadow-sm p-6 mb-8;
 }
 </style> 

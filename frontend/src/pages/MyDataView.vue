@@ -1,77 +1,85 @@
 <template>
-  <div class="mydata-view">
-    <div
-      v-motion
-      :initial="{ opacity: 0, y: 40 }"
-      :enter="{ opacity: 1, y: 0 }"
-      :delay="300"
-      :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
-      class="max-w-6xl mx-auto px-4 py-12"
-    >
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
-          마이데이터 분석
-        </h1>
-        <button 
-          @click="refreshData" 
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+  <div class="mydata-page">
+    <!-- 비로그인 상태일 때 로그인 유도 HeroSection 표시 -->
+    <template v-if="!isAuthenticated">
+      <HeroSection />
+    </template>
+
+    <!-- 로그인 상태일 때 -->
+    <template v-else>
+      <!-- 카드 데이터가 없을 때 카드 연동 유도 HeroSection 표시 -->
+      <template v-if="!hasCardData && !isLoading">
+        <HeroSection />
+      </template>
+
+      <!-- 카드 데이터가 있을 때 마이데이터 분석 화면 표시 -->
+      <template v-else>
+        <div
+          v-motion
+          :initial="{ opacity: 0, y: 40 }"
+          :enter="{ opacity: 1, y: 0 }"
+          :delay="300"
+          :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
+          class="mydata-container"
         >
-          데이터 새로고침
-        </button>
-      </div>
-      
-      <!-- 로딩 상태 -->
-      <div v-if="isLoading" class="flex justify-center items-center h-64">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
+          <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
+              마이데이터 분석
+            </h1>
+          </div>
+          
+          <!-- 로딩 상태 -->
+          <div v-if="isLoading" class="flex justify-center items-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
 
-      <!-- 에러 상태 -->
-      <div v-else-if="error" class="bg-red-50 p-4 rounded-lg mb-6">
-        <p class="text-red-600">{{ error }}</p>
-      </div>
+          <!-- 에러 상태 -->
+          <div v-else-if="error" class="bg-red-50 p-4 rounded-lg mb-6">
+            <p class="text-red-600">{{ error }}</p>
+          </div>
 
-      <!-- 데이터 표시 -->
-      <div v-else class="grid gap-6">
-        <!-- 카드 요약 섹션 -->
-        <CardSummarySection 
-          :cards="cardData.card_list" 
-          :total-spending="getTotalSpending"
-          :card-approvals="cardData.card_approvals"
-        />
+          <!-- 데이터 표시 -->
+          <div v-else class="grid gap-6">
+            <!-- 기존 컴포넌트들 -->
+            <CardSummarySection 
+              :cards="cardData.card_list" 
+              :total-spending="getTotalSpending"
+              :card-approvals="cardData.card_approvals"
+            />
 
-        <!-- 지출 캘린더 및 그래프 -->
-        <div class="grid md:grid-cols-2 gap-6">
-          <SpendCalandar 
-            :approvals="cardData.card_approvals"
-            class="bg-white rounded-xl shadow-sm p-6" 
-          />
-          <SpendCalandarGraph 
-            :monthly-data="getMonthlySpending"
-            class="bg-white rounded-xl shadow-sm p-6" 
-          />
+            <div class="grid md:grid-cols-2 gap-6">
+              <SpendCalandar 
+                :approvals="cardData.card_approvals"
+                :cards="cardData.card_list"
+                class="bg-white rounded-xl shadow-sm p-6" 
+              />
+              <SpendCalandarGraph 
+                :monthly-data="getMonthlySpending"
+                class="bg-white rounded-xl shadow-sm p-6" 
+              />
+            </div>
+
+            <RecommendGpt 
+              :card-data="cardData"
+              @update-recommendation="updateRecommendation"
+            />
+
+            <div v-if="notifications.length" class="bg-blue-50 p-4 rounded-lg">
+              <h3 class="font-semibold mb-2">알림</h3>
+              <ul class="space-y-2">
+                <li 
+                  v-for="notification in notifications" 
+                  :key="notification.id"
+                  class="text-sm text-blue-800"
+                >
+                  {{ notification.message }}
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
-
-        <!-- GPT 추천 섹션 -->
-        <RecommendGpt 
-          :card-data="cardData"
-          @update-recommendation="updateRecommendation"
-        />
-
-        <!-- 알림 섹션 -->
-        <div v-if="notifications.length" class="bg-blue-50 p-4 rounded-lg">
-          <h3 class="font-semibold mb-2">알림</h3>
-          <ul class="space-y-2">
-            <li 
-              v-for="notification in notifications" 
-              :key="notification.id"
-              class="text-sm text-blue-800"
-            >
-              {{ notification.message }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+      </template>
+    </template>
   </div>
 </template>
 
@@ -81,7 +89,10 @@ import CardSummarySection from '../components/mydata/CardSummarySection.vue'
 import SpendCalandar from '../components/mydata/SpendCalandar.vue'
 import SpendCalandarGraph from '../components/mydata/SpendCalandarGraph.vue'
 import RecommendGpt from '../components/mydata/RecommendGpt.vue'
+import HeroSection from '../components/HeroSection.vue'
 import axios from 'axios'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '../stores/auth'
 
 // 상태 관리
 const isLoading = ref(false)
@@ -94,11 +105,24 @@ const cardData = ref({
 const notifications = ref([])
 const recommendation = ref(null)
 
+const authStore = useAuthStore()
+const { isAuthenticated } = storeToRefs(authStore)
+
+// 로그인 상태 확인
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('access_token')
+})
+
+// 카드 데이터 존재 여부 확인
+const hasCardData = computed(() => {
+  return cardData.value.card_list.length > 0
+})
+
 // API 기본 설정
 const API_BASE_URL = 'http://localhost:8000'
 
-// 데이터 가져오기
-const fetchData = async () => {
+// 마이데이터 가져오기
+const fetchMyData = async () => {
   isLoading.value = true
   error.value = null
   
@@ -109,14 +133,18 @@ const fetchData = async () => {
       }
     })
     
+    console.log('API Response:', response.data)
+    
     // card_list에 numeric_id 추가
     const processedData = {
       ...response.data,
-      card_list: response.data.card_list.map((card, index) => ({
+      card_list: response.data.card_list.map(card => ({
         ...card,
-        numeric_id: index + 1  // 1부터 시작하는 순차적인 ID 부여
+        numeric_id: card.id
       }))
     }
+    
+    console.log('Processed Data:', processedData)
     cardData.value = processedData
     checkForNotifications()
   } catch (err) {
@@ -127,10 +155,12 @@ const fetchData = async () => {
   }
 }
 
-// 데이터 새로고침
-const refreshData = () => {
-  fetchData()
-}
+// 컴포넌트 마운트 시 데이터 로드
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchMyData()
+  }
+})
 
 // 총 지출액 계산
 const getTotalSpending = computed(() => {
@@ -186,14 +216,19 @@ const checkForNotifications = () => {
 const updateRecommendation = (newRecommendation) => {
   recommendation.value = newRecommendation
 }
-
-// 컴포넌트 마운트 시 데이터 로드
-onMounted(() => {
-  fetchData()
-})
 </script>
 
 <style scoped>
+.mydata-page {
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem; /* 헤더 높이만큼 위로 올림 */
+  padding-top: 5rem; /* 헤더 영역만큼 패딩 추가 */
+}
+
+.mydata-container {
+  @apply max-w-6xl mx-auto px-4 py-8;
+}
+
 .mydata-view {
   @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
 }

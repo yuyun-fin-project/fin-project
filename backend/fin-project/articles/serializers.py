@@ -12,7 +12,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = [
             'id', 'user_id', 'title', 'content', 'created_at',
-            'updated_at', 'nickname', 'like_count', 'is_liked'
+            'updated_at', 'nickname', 'like_count', 'is_liked',
         ]
 
     def get_like_count(self, obj):

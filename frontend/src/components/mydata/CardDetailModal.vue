@@ -1,8 +1,13 @@
 <!-- 카드 상세 모달 -->
 <template>
   <Teleport to="body">
-    <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-      <div class="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <div v-if="show" 
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+         @click="handleBackdropClick"
+    >
+      <div class="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+           @click.stop
+      >
         <!-- 모달 헤더 -->
         <div class="p-6 border-b">
           <div class="flex justify-between items-center">
@@ -244,6 +249,13 @@ const averageAmount = computed(() => {
   const total = approvedTransactions.reduce((sum, a) => sum + a.approved_amt, 0)
   return Math.round(total / approvedTransactions.length)
 })
+
+// 모달 외부 클릭 핸들러
+const handleBackdropClick = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    closeModal()
+  }
+}
 </script>
 
 <style scoped>

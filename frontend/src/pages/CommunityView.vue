@@ -1,5 +1,5 @@
 <template>
-  <div class="community-view">
+  <div class="community-page">
     <div
       v-motion
       :key="'community-content'"
@@ -7,7 +7,7 @@
       :enter="{ opacity: 1, y: 0 }"
       :delay="300"
       :transition="{ type: 'spring', damping: 25, stiffness: 100 }"
-      class="max-w-6xl mx-auto px-4 py-12"
+      class="community-container"
     >
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
@@ -142,5 +142,15 @@ const handleSearch = () => {
 <style scoped>
 .community-view {
   @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
+}
+
+.community-page {
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem; /* 헤더 높이만큼 위로 올림 */
+  padding-top: 5rem; /* 헤더 영역만큼 패딩 추가 */
+}
+
+.community-container {
+  @apply max-w-6xl mx-auto px-4 py-8;
 }
 </style>

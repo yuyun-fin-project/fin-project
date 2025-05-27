@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md mx-auto">
+  <div class="login-page">
+    <div class="login-container">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">환영합니다!</h1>
-        <p class="text-gray-600">소셜 계정으로 간편하게 로그인하세요</p>
+        <h1 class="login-title">환영합니다!</h1>
+        <p class="login-subtitle">소셜 계정으로 간편하게 로그인하세요</p>
       </div>
 
       <div class="space-y-4">
@@ -30,15 +30,28 @@ const KAKAO_AUTH_URL = import.meta.env.VITE_KAKAO_LOGIN_URL || 'http://localhost
 </script>
 
 <style scoped>
+.login-page {
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem;
+  padding-top: 5rem;
+}
+
+.login-container {
+  @apply container mx-auto px-4 py-8 flex flex-col items-center justify-center;
+}
+
+.login-title {
+  @apply text-3xl font-bold text-center mb-4;
+}
+
+.login-subtitle {
+  @apply text-gray-600 text-center mb-8;
+}
+
 .social-login-container {
   max-width: 400px;
   margin: 0 auto;
   padding: 2rem;
-}
-
-.login-title {
-  text-align: center;
-  margin-bottom: 2rem;
 }
 
 .buttons-container {

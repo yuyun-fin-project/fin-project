@@ -11,7 +11,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-        </button>
+      </button>
         <h3 class="text-lg text-black font-medium">{{ currentYearMonth }}</h3>
         <button 
           @click="nextMonth" 
@@ -22,7 +22,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </button>
-      </div>
+          </div>
 
       <!-- 요일 헤더 -->
       <div class="grid grid-cols-7 gap-1 mb-2">
@@ -44,20 +44,20 @@
           :class="[
             {
               'bg-gray-50': !isCurrentMonth(day.date),
-              'bg-white hover:bg-blue-50 cursor-pointer': isCurrentMonth(day.date) && hasDayTransactions(day.date),
-              'bg-white': isCurrentMonth(day.date) && !hasDayTransactions(day.date),
+              'bg-white hover:bg-blue-50 cursor-pointer': isCurrentMonth(day.date) && day.hasTransactions,
+              'bg-white': isCurrentMonth(day.date) && !day.hasTransactions,
               'border-blue-500': isToday(day.date),
               'border-gray-200': !isToday(day.date)
             }
           ]"
-          @click="hasDayTransactions(day.date) && handleDateClick(day.date)"
+          @click="isCurrentMonth(day.date) && day.hasTransactions ? handleDateClick(day.date) : null"
         >
           <div class="absolute inset-0 p-2 flex flex-col">
             <span class="text-sm font-medium" :class="getDayClass(day.date)">
               {{ day.date.getDate() }}
             </span>
             <div v-if="day.spending > 0" class="mt-auto">
-              <div class="text-xs font-medium text-gray-900">
+              <div class="text-[10px] font-small text-gray-900">
                 {{ formatNumber(day.spending) }}원
               </div>
               <div class="w-full h-1 rounded-full mt-1"
@@ -74,6 +74,7 @@
         :show="showDailyModal"
         :date="selectedDate"
         :transactions="selectedDayTransactions"
+        :cards="props.cards"
         @close="closeDailyModal"
       />
     </div>
@@ -81,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { PropType } from 'vue'
@@ -141,19 +142,25 @@ const parseDate = (dateStr: string) => {
 // 거래 내역이 있는 날짜 확인 함수
 const hasDayTransactions = (date: Date) => {
   const targetDate = format(date, 'yyyyMMdd')
-  return props.approvals.some(approval => approval.approved_dtime.startsWith(targetDate))
+  return props.approvals.some(approval => {
+    const approvalDate = approval.approved_dtime.slice(0, 8)
+    return approvalDate === targetDate
+  })
 }
+
+// props 데이터 모니터링
+watch(() => props.cards, (newCards) => {
+  console.log('Cards in SpendCalandar:', newCards)
+}, { immediate: true })
+
+watch(() => props.approvals, (newApprovals) => {
+  console.log('Approvals in SpendCalandar:', newApprovals)
+}, { immediate: true })
 
 // 카드 정보 찾기 함수
 const findCardInfo = (cardId: number) => {
   console.log('Finding card for ID:', cardId)
-  console.log('Available cards:', props.cards)
-  
-  const matchingCard = props.cards.find(card => {
-    console.log('Comparing:', card.numeric_id, cardId)
-    return Number(card.numeric_id) === Number(cardId)
-  })
-  
+  const matchingCard = props.cards.find(card => card.id === cardId)
   console.log('Found card:', matchingCard)
   return matchingCard ? matchingCard.card_name : '알 수 없는 카드'
 }
@@ -201,16 +208,24 @@ const calendarDays = computed(() => {
 
   return days.map(date => {
     const targetDate = format(date, 'yyyyMMdd')
+    // 승인된 거래만 금액에 포함
     const spending = props.approvals
-      .filter(approval => 
-        approval.approved_dtime.startsWith(targetDate) && 
-        approval.status === '승인'
-      )
+      .filter(approval => {
+        const approvalDate = approval.approved_dtime.slice(0, 8)
+        return approvalDate === targetDate && approval.status === '승인'
+      })
       .reduce((sum, approval) => sum + approval.approved_amt, 0)
+
+    // 모든 상태의 거래 포함
+    const hasTransactions = props.approvals.some(approval => {
+      const approvalDate = approval.approved_dtime.slice(0, 8)
+      return approvalDate === targetDate
+    })
 
     return {
       date,
       spending,
+      hasTransactions,
       isCurrentMonth: date.getMonth() === currentDate.value.getMonth()
     }
   })
