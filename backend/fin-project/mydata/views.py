@@ -205,7 +205,7 @@ def analyze_and_recommend(request):
             total_spent = sum(item["approved_amt"] for item in card_approvals)
 
             # 소비 요약
-                        # 월간 소비 요약
+             # 월간 소비 요약
             monthly_spending = {}
             for bill in card_bills:
                 month = bill["bill_year_month"]

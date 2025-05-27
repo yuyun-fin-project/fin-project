@@ -26,10 +26,60 @@ from pprint import pprint
 # Create your views here.
 @api_view(['GET'])
 def get_prd(request):
-    prd = Product.objects.all()
-    opt = Option.objects.all()
+    # 쿼리 파라미터 가져오기
+    bank = request.GET.get('bank', '').strip()
+    product_type = request.GET.get('product_type', '').strip()
+    sort_by = request.GET.get('sort_by', 'rate_desc').strip()
+    
+    # 기본 쿼리셋
+    products = Product.objects.all()
+    
+    # 은행명 필터링
+    if bank:
+        products = products.filter(kor_co_nm__icontains=bank)
+    
+    # 상품 유형 필터링
+    if product_type:
+        products = products.filter(prd_type=product_type)
+    
+    # 모든 상품과 해당 옵션 정보를 리스트로 변환
+    product_list = []
+    for product in products:
+        # 해당 상품의 모든 옵션 가져오기
+        options = Option.objects.filter(prd=product)
+        max_rate = 0
+        
+        # 최대 금리 계산
+        for option in options:
+            try:
+                rate = float(option.intr_rate2) if option.intr_rate2 else float(option.intr_rate) if option.intr_rate else 0
+                max_rate = max(max_rate, rate)
+            except (ValueError, TypeError):
+                continue
+        
+        product_list.append({
+            'product': product,
+            'max_rate': max_rate
+        })
+    
+    # 정렬 적용
+    if sort_by == 'rate_desc':
+        product_list.sort(key=lambda x: x['max_rate'], reverse=True)
+    elif sort_by == 'rate_asc':
+        product_list.sort(key=lambda x: x['max_rate'])
+    elif sort_by == 'bank':
+        product_list.sort(key=lambda x: x['product'].kor_co_nm)
+    
+    # 정렬된 상품 ID 리스트 생성
+    sorted_product_ids = [item['product'].id for item in product_list]
+    
+    # 정렬된 순서대로 상품과 옵션 가져오기
+    from django.db.models import Case, When
+    preserved_order = Case(*[When(id=id, then=pos) for pos, id in enumerate(sorted_product_ids)])
+    prd = Product.objects.filter(id__in=sorted_product_ids).order_by(preserved_order)
+    opt = Option.objects.filter(prd__in=sorted_product_ids)
 
-    if not prd.exists() or not opt.exists():
+    if not Product.objects.exists() or not Option.objects.exists():
         # 호출
         deposit_responses, saving_responses = prd_api()
         # 전처리
@@ -52,7 +102,7 @@ def get_prd(request):
             opt_serializer = OptionSerializer(data=saving_opt_json, many=True)
             if opt_serializer.is_valid(raise_exception=True):
                 opt_serializer.save()        
-        prd = Product.objects.all()
+        prd = Product.objects.prefetch_related('options').all()
         opt = Option.objects.all()
     # 한번에 저장
     # prd_serializer = ProductSerializer(data=all_prd_json, many=True)
@@ -239,13 +289,37 @@ def recommend_view(request):
 
     product_rates = []
     for product in products:
+        # 모든 금리 옵션 정보 가져오기
+        options_data = []
+        for option in product.options.all():
+            options_data.append({
+                'save_trm': option.save_trm,
+                'intr_rate': option.intr_rate,
+                'intr_rate2': option.intr_rate2,
+                'intr_rate_type': option.intr_rate_type,
+                'intr_rate_type_nm': option.intr_rate_type_nm
+            })
+        
+        # 최고 금리 옵션 찾기 (표시용)
         best_option = product.options.order_by('-intr_rate2').first()
         rate = best_option.intr_rate2 or best_option.intr_rate or 0
+        
         product_rates.append({
             "상품명": product.fin_prdt_nm,
             "금융사": product.kor_co_nm,
             "금융상품유형": product.prd_type,
-            "금리":rate,
+            "금리": rate,
+            "originalProduct": {
+                "id": product.id,
+                "fin_prdt_nm": product.fin_prdt_nm,
+                "kor_co_nm": product.kor_co_nm,
+                "prd_type": product.prd_type,
+                "join_way": product.join_way,
+                "join_deny": product.join_deny,
+                "join_member": product.join_member,
+                "etc_note": product.etc_note,
+                "options": options_data
+            }
         })
 
     top_products = sorted(product_rates, key=lambda x: x["금리"], reverse=True)[:3]

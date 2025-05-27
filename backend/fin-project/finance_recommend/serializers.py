@@ -1,7 +1,42 @@
 from rest_framework import serializers
 from .models import Product, Option, Gold, Oil, Carbon
 
+class OptionSerializer(serializers.ModelSerializer):
+    
+    prd = serializers.PrimaryKeyRelatedField(read_only=True)
+    fin_prdt_cd = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Option
+        fields = [
+            'id',
+            'fin_prdt_cd',  # 클라이언트에서만 쓰고 DB에는 저장하지 않음
+            'prd',
+            'save_trm',
+            'intr_rate_type',
+            'intr_rate_type_nm',
+            'rsrv_type',
+            'rsrv_type_nm',
+            'intr_rate',
+            'intr_rate2',
+        ]
+
+    def create(self, validated_data):
+        # fin_prdt_cd 꺼내서 prd 찾기
+        fin_prdt_cd = validated_data.pop('fin_prdt_cd')
+
+        try:
+            product = Product.objects.get(fin_prdt_cd=fin_prdt_cd)
+        except Product.DoesNotExist:
+            raise serializers.ValidationError({'fin_prdt_cd': '해당 fin_prdt_cd를 가진 Product가 존재하지 않습니다.'})
+
+        # prd로 연결해서 Option 저장
+        option = Option.objects.create(prd=product, **validated_data)
+
+        return option
+
 class ProductSerializer(serializers.ModelSerializer):
+    options = OptionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -43,41 +78,6 @@ class ProductSerializer(serializers.ModelSerializer):
             instance.kor_co_nm = validated_data.get('kor_co_nm', instance.kor_co_nm)
             instance.save()
         return instance
-
-
-class OptionSerializer(serializers.ModelSerializer):
-    
-    prd = serializers.PrimaryKeyRelatedField(read_only=True)
-    fin_prdt_cd = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Option
-        fields = [
-            'id',
-            'fin_prdt_cd',  # 클라이언트에서만 쓰고 DB에는 저장하지 않음
-            'prd',
-            'save_trm',
-            'intr_rate_type',
-            'intr_rate_type_nm',
-            'rsrv_type',
-            'rsrv_type_nm',
-            'intr_rate',
-            'intr_rate2',
-        ]
-
-    def create(self, validated_data):
-        # fin_prdt_cd 꺼내서 prd 찾기
-        fin_prdt_cd = validated_data.pop('fin_prdt_cd')
-
-        try:
-            product = Product.objects.get(fin_prdt_cd=fin_prdt_cd)
-        except Product.DoesNotExist:
-            raise serializers.ValidationError({'fin_prdt_cd': '해당 fin_prdt_cd를 가진 Product가 존재하지 않습니다.'})
-
-        # prd로 연결해서 Option 저장
-        option = Option.objects.create(prd=product, **validated_data)
-
-        return option
 
 
 '''

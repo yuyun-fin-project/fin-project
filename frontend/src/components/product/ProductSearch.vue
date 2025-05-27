@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 
 const emit = defineEmits(['search'])
@@ -63,43 +63,127 @@ const searchParams = ref({
 // 은행 목록
 const banks = ref([])
 
+// 상품 데이터
+const products = ref([])
+const options = ref([])
+
+// API 기본 설정
+const API_BASE_URL = 'http://localhost:8000'
+
+// 최대 금리 계산 함수
+const getMaxRate = (product, allOptions) => {
+  const productOptions = allOptions.filter(opt => opt.prd === product.id)
+  let maxRate = 0
+  
+  productOptions.forEach(option => {
+    const rate = parseFloat(option.intr_rate2 || option.intr_rate || 0)
+    if (!isNaN(rate) && rate > maxRate) {
+      maxRate = rate
+    }
+  })
+  
+  return maxRate
+}
+
+// 정렬 함수
+const sortProducts = (products, options, sortBy) => {
+  return [...products].sort((a, b) => {
+    if (sortBy === 'rate_desc' || sortBy === 'rate_asc') {
+      const rateA = getMaxRate(a, options)
+      const rateB = getMaxRate(b, options)
+      return sortBy === 'rate_desc' ? rateB - rateA : rateA - rateB
+    } else if (sortBy === 'bank') {
+      return a.kor_co_nm.localeCompare(b.kor_co_nm, 'ko-KR')
+    }
+    return 0
+  })
+}
+
 // 은행 목록 가져오기
 const fetchBanks = async () => {
   try {
-    const response = await axios.get('/finrecom/')
+    const params = new URLSearchParams()
+    if (searchParams.value.bank) {
+      params.append('bank', searchParams.value.bank)
+    }
+    if (searchParams.value.productType !== 'all') {
+      params.append('product_type', searchParams.value.productType)
+    }
+    if (searchParams.value.sortBy) {
+      params.append('sort_by', searchParams.value.sortBy)
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/finrecom/`, {
+      params: params
+    })
+
     if (response.data?.results?.prd) {
-      // 중복 제거된 은행 목록 생성
-      const uniqueBanks = [...new Set(response.data.results.prd.map(item => item.kor_co_nm))]
-      banks.value = uniqueBanks.sort() // 알파벳 순으로 정렬
+      // 중복 제거된 은행 목록 생성 및 정렬
+      const uniqueBanks = [...new Set(
+        response.data.results.prd
+          .map(item => item.kor_co_nm)
+          .filter(bank => bank)
+      )].sort((a, b) => a.localeCompare(b, 'ko-KR'))
+
+      banks.value = uniqueBanks
+      products.value = response.data.results.prd
+      options.value = response.data.results.opt
+
+      // 검색 결과 emit
+      emit('search', {
+        products: response.data.results.prd,
+        options: response.data.results.opt
+      })
     }
   } catch (err) {
     console.error('은행 목록 가져오기 실패:', err)
   }
 }
 
-// 검색 처리
-const handleSearch = () => {
-  const params = {
-    kor_co_nm: searchParams.value.bank,
-    prd_type: searchParams.value.productType === 'all' ? '' : searchParams.value.productType,
-    sort: searchParams.value.sortBy
+// 검색 및 정렬 처리
+const handleSearch = async () => {
+  try {
+    // 검색 결과 emit
+    emit('search', {
+      bank: searchParams.value.bank,
+      productType: searchParams.value.productType,
+      sortBy: searchParams.value.sortBy
+    })
+  } catch (error) {
+    console.error('검색 실패:', error)
   }
-  
-  // 빈 값은 제외하고 emit
-  Object.keys(params).forEach(key => {
-    if (!params[key]) {
-      delete params[key]
-    }
-  })
-  
-  emit('search', params)
 }
 
-// 컴포넌트 마운트 시 은행 목록 가져오기
+// 컴포넌트 마운트 시 초기 데이터 가져오기
 onMounted(async () => {
-  await fetchBanks()
-  handleSearch() // 초기 검색 실행
+  try {
+    const response = await axios.get(`${API_BASE_URL}/finrecom/`)
+    if (response.data?.results?.prd) {
+      // 중복 제거된 은행 목록 생성 및 정렬
+      const uniqueBanks = [...new Set(
+        response.data.results.prd
+          .map(item => item.kor_co_nm)
+          .filter(bank => bank)
+      )].sort((a, b) => a.localeCompare(b, 'ko-KR'))
+
+      banks.value = uniqueBanks
+      
+      // 초기 검색 결과 emit
+      emit('search', {
+        bank: searchParams.value.bank,
+        productType: searchParams.value.productType,
+        sortBy: searchParams.value.sortBy
+      })
+    }
+  } catch (err) {
+    console.error('초기 데이터 로딩 실패:', err)
+  }
 })
+
+// 검색 파라미터 변경 감시
+watch(searchParams, () => {
+  handleSearch()
+}, { deep: true })
 </script>
 
 <style scoped>
