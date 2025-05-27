@@ -1,9 +1,6 @@
 <template>
-  <div id="app" class="app">
-    <div class="container">
-      <Header />
-    </div>
-
+  <div id="app" :class="{ 'home-page': isHomePage }" class="app">
+    <Header />
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
         <suspense>
@@ -68,7 +65,7 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, computed } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useModalStore } from './stores/modalStore'
 import Header from "./components/Header.vue";
@@ -83,6 +80,7 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const modalStore = useModalStore()
+const isHomePage = computed(() => route.path === '/')
 
 // URL의 access 토큰 감시
 watch(
@@ -203,7 +201,7 @@ const handleArticleUpdate = async (articleData) => {
 }
 
 .main-content {
-  @apply flex-grow;
+  @apply flex-grow pt-20;
 }
 
 .loading {

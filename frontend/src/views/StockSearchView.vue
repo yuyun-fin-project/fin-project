@@ -237,8 +237,21 @@ const formatDate = (dateString) => {
 
 <style scoped>
 .stock-search-view {
-  @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem;  /* 상단 여백 제거 */
+  padding-top: 5rem;  /* 헤더 높이만큼 패딩 추가 */
+}
 
+.stock-search-container {
+  @apply container mx-auto px-4 py-8;
+}
+
+.search-title {
+  @apply text-3xl font-bold text-center mb-8;
+}
+
+.search-form {
+  @apply max-w-2xl mx-auto;
 }
 
 .line-clamp-2 {

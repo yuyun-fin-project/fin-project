@@ -1,6 +1,6 @@
 <template>
-  <div class="recommend-view min-h-screen bg-gradient-to-b from-blue-50 to-white">
-    <div class="max-w-4xl mx-auto px-4 py-12">
+  <div class="recommend-page">
+    <div class="recommend-container">
       <div
         v-motion
         :initial="{ opacity: 0, y: 40 }"
@@ -495,4 +495,16 @@ axios.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-</script> 
+</script>
+
+<style scoped>
+.recommend-page {
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem; /* 헤더 높이만큼 위로 올림 */
+  padding-top: 5rem; /* 헤더 영역만큼 패딩 추가 */
+}
+
+.recommend-container {
+  @apply max-w-6xl mx-auto px-4 py-8;
+}
+</style> 

@@ -73,31 +73,16 @@
 
         <!-- 실시간 금융 정보 -->
         <section class="mb-12">
-          <h2 class="text-3xl font-bold text-center mb-12 text-gray-900">실시간 금융 정보</h2>
-          <div class="grid md:grid-cols-2 gap-8">
-            <!-- 경제 뉴스 -->
-            <div
-              v-motion
-              :initial="{ opacity: 0, x: -20 }"
-              :enter="{ opacity: 1, x: 0 }"
-              :delay="800"
-              class="bg-white p-6 rounded-xl shadow-sm"
-            >
-              <h3 class="text-xl font-semibold mb-4 text-gray-900">경제 뉴스</h3>
-              <economic-news-list />
-            </div>
-            
-            <!-- 시장 동향 -->
-            <div
-              v-motion
-              :initial="{ opacity: 0, x: 20 }"
-              :enter="{ opacity: 1, x: 0 }"
-              :delay="900"
-              class="bg-white p-6 rounded-xl shadow-sm"
-            >
-              <h3 class="text-xl font-semibold mb-4 text-gray-900">시장 동향</h3>
-              <market-trend-list :trends="marketTrends" />
-            </div>
+          <h2 class="text-3xl font-bold text-center mb-12 text-gray-900">경제 뉴스</h2>
+          <!-- 경제 뉴스 -->
+          <div
+            v-motion
+            :initial="{ opacity: 0, y: 40 }"
+            :enter="{ opacity: 1, y: 0 }"
+            :delay="800"
+            class="bg-white p-6 rounded-xl shadow-sm w-full"
+          >
+            <economic-news-list />
           </div>
         </section>
 
@@ -176,10 +161,10 @@
             </p>
             <div class="space-x-4">
               <router-link
-                to="/register"
-                class="inline-block bg-white text-blue-600 border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                to="/mydata"
+                class="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
               >
-                회원가입
+                소비습관 분석하기
               </router-link>
               <router-link
                 to="/recommend"
@@ -226,25 +211,6 @@ const features = [
     description: '다른 투자자들과 정보를 공유하고 소통할 수 있습니다.'
   }
 ]
-
-// 시장 동향 데이터
-const marketTrends = ref([
-  {
-    title: '기준금리 동결',
-    description: '한국은행, 기준금리 3.50% 동결 결정',
-    date: '2024.03.21'
-  },
-  {
-    title: '예금금리 상승세',
-    description: '시중은행 예금금리 평균 4.5% 기록',
-    date: '2024.03.20'
-  },
-  {
-    title: '펀드시장 동향',
-    description: '채권형 펀드 수익률 상승세 지속',
-    date: '2024.03.19'
-  }
-])
 
 // 인기 게시글 데이터
 const popularPosts = ref([
@@ -340,9 +306,18 @@ onMounted(() => {
 
 <style scoped>
 .home-page {
-  @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
+  @apply min-h-screen;
 }
 
+.hero-section {
+  position: relative;
+  width: 100%;
+  min-height: 600px;  /* 전체 화면 높이에서 적절한 높이로 변경 */
+  background: linear-gradient(135deg, #4285f4 0%, #3b82f6 100%);
+  overflow: hidden;
+  margin-top: -5rem;
+  padding-top: 8rem;
+}
 
 .bg-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");

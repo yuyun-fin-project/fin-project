@@ -117,6 +117,16 @@ onMounted(async () => {
 
 <style scoped>
 .my-page {
-  @apply min-h-screen bg-gradient-to-b from-blue-50 to-white;
+  @apply min-h-screen bg-gray-50;
+  margin-top: -5rem;
+  padding-top: 5rem;
+}
+
+.mypage-container {
+  @apply container mx-auto px-4 py-8;
+}
+
+.profile-section {
+  @apply bg-white rounded-lg shadow-md p-6 mb-8;
 }
 </style> 
