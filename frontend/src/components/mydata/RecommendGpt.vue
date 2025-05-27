@@ -173,7 +173,6 @@ const api = axios.create({
     }
 })
 
-// Add request interceptor to include auth token
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('access_token')
@@ -187,7 +186,6 @@ api.interceptors.request.use(
     }
 )
 
-// Add response interceptor to handle 401 errors
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
