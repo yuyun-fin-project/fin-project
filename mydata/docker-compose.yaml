@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: as124578
+      POSTGRES_DB: card_db
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: as124578
+      POSTGRES_DB: card_db
+    depends_on:
+      - db

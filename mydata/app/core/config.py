@@ -22,9 +22,9 @@ class Settings:
     # 데이터베이스 연결 설정
     POSTGRES_USER: str = os.getenv("POSTGRES_USER")  # PostgreSQL 사용자 이름
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD")  # PostgreSQL 비밀번호
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")  # PostgreSQL 서버 주소 (기본값: localhost)
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "host.docker.internal")  # PostgreSQL 서버 주소 (기본값: localhost)
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")  # PostgreSQL 포트 (기본값: 5432)
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "mydata_db")  # 데이터베이스 이름 (기본값: mydata_db)
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "card_db")  # 데이터베이스 이름 (기본값: mydata_db)
 
     # JWT 인증 설정
     SECRET_KEY: str = os.getenv("SECRET_KEY")  # JWT 서명을 위한 시크릿 키

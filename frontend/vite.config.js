@@ -74,7 +74,11 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000
     },
     define: {
-      '%VITE_KAKAO_MAP_API_KEY%': JSON.stringify(env.VITE_KAKAO_MAP_API_KEY)
+      __VITE_KAKAO_MAP_API_KEY__: JSON.stringify(env.VITE_KAKAO_MAP_API_KEY)
     }
+    // 빌드 실패로 인해 주석 처리
+    // define: {
+    //   '%VITE_KAKAO_MAP_API_KEY%': JSON.stringify(env.VITE_KAKAO_MAP_API_KEY)
+    // }
   }
 }) 
