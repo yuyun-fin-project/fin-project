@@ -1,5 +1,8 @@
 <template>
     <div class="recommend-gpt">
+        <h2 class="text-xl font-semibold text-black mb-4">소비습관 분석</h2>
+        <p class="text-gray-600 mb-6">월 소득을 입력하고 소비습관 분석을 받아보세요</p>
+        
         <input 
         type="number" 
         v-model.number="income" 
@@ -307,10 +310,6 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       margin: 1rem 0;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        margin: 1rem 0;
     }
     
     .input-field {
@@ -328,14 +327,14 @@
     .input-field:focus {
         font-color: #334155;
         outline: none;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
     
     .submit-btn {
         width: 100%;
         padding: 0.75rem;
-        background-color: #4f46e5;
+        background-color: #3b82f6;
         color: white;
         border: none;
         border-radius: 8px;
@@ -346,11 +345,11 @@
     }
     
     .submit-btn:hover {
-        background-color: #4338ca;
+        background-color: #2563eb;
     }
     
     .submit-btn:disabled {
-        background-color: #c7d2fe;
+        background-color: #bfdbfe;
         cursor: not-allowed;
     }
     

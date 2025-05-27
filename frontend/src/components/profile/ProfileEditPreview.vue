@@ -1,23 +1,86 @@
 <template>
   <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
     <h2 class="text-xl font-semibold text-gray-900 mb-4">회원 정보 수정</h2>
-    <div class="text-center py-8">
-      <div class="mb-4">
-        <svg class="w-16 h-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
+    <div class="space-y-6">
+      <!-- 닉네임 수정 폼 -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">닉네임</label>
+        <div class="flex space-x-2">
+          <input
+            v-model="nickname"
+            type="text"
+            placeholder="새로운 닉네임을 입력하세요"
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            @click="updateNickname"
+            :disabled="isLoading || !nickname"
+            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ isLoading ? '변경 중...' : '변경하기' }}
+          </button>
+        </div>
+        <p v-if="error" class="mt-2 text-sm text-red-600">{{ error }}</p>
+        <p v-if="success" class="mt-2 text-sm text-green-600">{{ success }}</p>
       </div>
-      <p class="text-gray-500 mb-4">회원 정보 수정 기능이 곧 제공될 예정입니다.</p>
-      <button 
-        class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-        disabled
-      >
-        준비 중
-      </button>
     </div>
   </div>
-</template> 
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const nickname = ref('')
+const isLoading = ref(false)
+const error = ref('')
+const success = ref('')
+
+const updateNickname = async () => {
+  if (!nickname.value) return
+  
+  isLoading.value = true
+  error.value = ''
+  success.value = ''
+
+  try {
+    const response = await axios.put(
+      `http://127.0.0.1:8000/accounts/profile/${auth.user.id}/`,
+      { nickname: nickname.value },
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      }
+    )
+
+    success.value = '닉네임이 성공적으로 변경되었습니다.'
+    // 전역 상태의 사용자 정보 업데이트
+    auth.updateUserInfo({ ...auth.user, nickname: nickname.value })
+    
+    // 3초 후 성공 메시지 제거 및 페이지 새로고침
+    setTimeout(() => {
+      success.value = ''
+      window.location.reload()
+    }, 1000)
+
+  } catch (err) {
+    if (err.response?.status === 401) {
+      error.value = '로그인이 필요합니다.'
+    } else if (err.response?.status === 405) {
+      error.value = '닉네임 변경이 허용되지 않습니다.'
+    } else if (err.response?.data?.detail) {
+      error.value = err.response.data.detail
+    } else {
+      error.value = '닉네임 변경 중 오류가 발생했습니다.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+</script> 
 
 
 

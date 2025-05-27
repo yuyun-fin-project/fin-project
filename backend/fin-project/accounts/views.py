@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import os
 import urllib.parse
 import requests
-from .utils import get_access_token, get_user_info, get_kakao_user_info
+from .utils import get_access_token, get_user_info, get_kakao_user_info, random_nickname
 from .serializers import UserSerializer
 
 # Create your views here.
@@ -175,13 +175,27 @@ def logout(request):
     except Exception:
         return Response(status=400)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def profile(request, user_id):
     try:
         user = get_object_or_404(get_user_model(), pk=user_id)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        
+        if request.method == 'GET':
+            serializer = UserSerializer(user)
+            return Response(serializer.data)
+            
+        elif request.method == 'PUT':
+            # 자신의 프로필만 수정할 수 있도록 체크
+            if request.user.id != user_id:
+                return Response({'error': '자신의 프로필만 수정할 수 있습니다.'}, status=403)
+                
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+            
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 

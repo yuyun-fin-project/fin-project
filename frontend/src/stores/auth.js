@@ -197,6 +197,10 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.clearAuth()
       }
+    },
+
+    updateUserInfo(userData) {
+      this.user = { ...this.user, ...userData }
     }
   },
 
