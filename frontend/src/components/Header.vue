@@ -9,8 +9,10 @@
       
       <!-- 로그인 상태에 따른 조건부 렌더링 -->
       <template v-if="isAuthenticated">
-        <router-link to="/mypage" class="mypage-btn">마이페이지</router-link>
-        <button @click="handleLogout" class="logout-btn">로그아웃</button>
+        <div class="auth-buttons">
+          <router-link to="/mypage" class="mypage-btn">마이페이지</router-link>
+          <button @click="handleLogout" class="logout-btn">로그아웃</button>
+        </div>
       </template>
       <router-link v-else to="/login" class="login-btn">로그인</router-link>
     </nav>
@@ -85,10 +87,29 @@ const handleLogout = async () => {
   font-weight: 600;
 }
 
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 로그인 버튼과 로그아웃 버튼 사이의 간격 조정 */
+}
+
+.mypage-btn {
+  color: #333;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.mypage-btn:hover {
+  color: #3182f6;
+}
+
 .login-btn, .logout-btn {
   background-color: #3182f6;
   color: white !important;
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem 1.2rem;
   border-radius: 0.75rem;
   border: none;
   font-weight: 600 !important;
@@ -103,7 +124,7 @@ const handleLogout = async () => {
 .mypage-btn {
   background-color: transparent;
   color: #3182f6 !important;
-  padding: 0.5rem 1.5rem;
+  padding: 0.3rem 1rem;
   border-radius: 0.75rem;
   border: 2px solid #3182f6;
   font-weight: 600 !important;

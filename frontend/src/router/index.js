@@ -4,7 +4,6 @@ import { useAuthStore } from '@/stores/auth'
 // 동기적으로 컴포넌트 import
 import HomePage from '../pages/HomePage.vue'
 import LoginPage from '../pages/LoginPage.vue'
-import AIView from '../pages/AIView.vue'
 import MyDataView from '../pages/MyDataView.vue'
 import CommunityView from '../pages/CommunityView.vue'
 import HomeView from '../views/HomeView.vue'
@@ -12,6 +11,7 @@ import StockSearchView from '../views/StockSearchView.vue'
 import CommunityPage from '@/views/CommunityPage.vue'
 import MyPage from '@/views/MyPage.vue'
 import DashboardView from '@/pages/DashboardView.vue'
+import RecommendView from '@/views/RecommendView.vue'
 
 const routes = [
   { 
@@ -29,7 +29,7 @@ const routes = [
   {
     path: '/recommend',
     name: 'Recommend',
-    component: AIView,
+    component: RecommendView,
     meta: { keepAlive: true }
   },
   {

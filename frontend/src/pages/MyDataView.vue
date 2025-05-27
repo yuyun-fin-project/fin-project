@@ -18,6 +18,7 @@
         <CardSummarySection />
         <SpendCalandar class="inline-component" />
         <SpendCalandarGraph class="inline-component" />
+        <RecommendGpt />
         <div class="notice-bar">
           공지사항 2021.03.09 18:00부터 22:00까지 시스템 업데이트가 있습니다.
         </div>
@@ -31,6 +32,7 @@ import HeroSection from '@/components/HeroSection.vue';
 import CardSummarySection from '../components/mydata/CardSummarySection.vue'
 import SpendCalandar from '../components/mydata/SpendCalandar.vue'
 import SpendCalandarGraph from '@/components/mydata/SpendCalandarGraph.vue';
+import RecommendGpt from '@/components/mydata/RecommendGpt.vue';
 </script>
 
 <style scoped>
