@@ -10,7 +10,7 @@ from datetime import datetime
 # .env 파일 로드
 load_dotenv()
 
-def spot_api(start_date, end_date):
+def spot_api(start_date, end_date, type):
     start_dates = datetime.strptime(start_date, "%Y%m%d")  # "20240501" 이런 형식
     end_dates = datetime.strptime(end_date, "%Y%m%d")
     

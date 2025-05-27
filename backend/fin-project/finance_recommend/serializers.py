@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Product, Option, Gold, Oil, Carbon
-from .utils.cosine_similarity import recommend_products
 
 class ProductSerializer(serializers.ModelSerializer):
 

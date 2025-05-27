@@ -1,7 +1,5 @@
 from django.shortcuts import render
-
-# 테스트용 입니다.
-from django.contrib.auth import get_user_model
+from django.http import JsonResponse
 
 from .utils.api_clients.mydata_api import get_card_list, get_card_approval,get_bill
 from .utils.data_processors.my_data_cleaner import data_preprocessing
@@ -10,6 +8,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from .serializers import CardApprovalSerializer, CardSerializer, CardBillSerializer
 from .models import Card, CardApproval, CardBill
@@ -19,6 +20,7 @@ import requests
 from openai import OpenAI
 from django.conf import settings
 import os
+
 
 
 # Create your views here.
@@ -126,3 +128,129 @@ def get_mydata(request):
             'payment_date': bill.payment_date
         } for bill in card_bills],
     }, status=status.HTTP_200_OK)
+
+
+
+
+def AI_input_data(request):
+    cards = Card.objects.filter(user=request.user)
+    print(f"Found {cards.count()} cards for user {request.user.id}")
+    serializer = CardSerializer(cards, many=True)
+    
+    # Get card approvals for the user's cards
+    card_approvals = CardApproval.objects.filter(card_id__in=cards)
+    
+    # Get card bills for the user's cards
+    card_bills = CardBill.objects.filter(user=request.user)
+
+    return{
+        'card_list': serializer.data,
+        'card_approvals': [{
+            'id': approval.id,
+            'card_id': approval.card_id_id,
+            'approved_num': approval.approved_num,
+            'approved_dtime': approval.approved_dtime,
+            'approved_amt': approval.approved_amt,
+            'merchant_name': approval.merchant_name,
+            'status': approval.get_status_display(),
+            'total_install_cnt': approval.total_install_cnt
+        } for approval in card_approvals],
+        'card_bills': [{
+            'id': bill.id,
+            'org_code': bill.org_code,
+            'bill_year_month': bill.bill_year_month,
+            'payment_year_month_day': bill.payment_year_month_day,
+            'total_amount': bill.total_amount,
+            'payment_date': bill.payment_date
+        } for bill in card_bills],
+    }
+
+# OpenAI 클라이언트 초기화 함수
+def get_openai_client():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("WARNING: OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.")
+        # 임시 테스트용 더미 클라이언트 반환
+        return None
+    return OpenAI(api_key=api_key)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def analyze_and_recommend(request):
+    if request.method == "POST":
+        try:
+            # 사용자 입력 (income) 받기
+            data = AI_input_data(request)
+            # input_data = json.loads(request.body)
+            # income = input_data.get('income')
+            income = 2400000
+
+            # 예시: 소비 데이터는 고정값 (DB에서 불러와야!)
+            card_approvals = data.get('card_approval', [])
+            card_bills = data.get("card_bills")
+            total_spent = sum(item["approved_amt"] for item in card_approvals)
+
+            # 소비 요약
+                        # 월간 소비 요약
+            monthly_spending = {}
+            for bill in card_bills:
+                month = bill["bill_year_month"]
+                monthly_spending[month] = monthly_spending.get(month, 0) + bill["total_amount"]
+
+            # 세부 소비 내역 (간단 정리)
+            detail_lines = []
+            for approval in card_approvals:
+                if approval["status"] == "승인":  # 승인된 것만
+                    date = approval["approved_dtime"][:6]
+                    detail_lines.append(
+                        f"{date}: {approval['merchant_name']} ({approval['approved_amt']}원)"
+                    )
+
+            # GPT에게 보낼 프롬프트
+            prompt = (
+                f"사용자의 월 소득은 {income}원입니다.\n\n"
+                f"월별 소비 요약:\n"
+            )
+            for month, amount in monthly_spending.items():
+                prompt += f"- {month}: {amount}원\n"
+
+            prompt += "\n소비 상세 내역:\n" + "\n".join(detail_lines)  # 일부만
+
+            prompt += (
+                "\n\n위 데이터를 기반으로 아래 항목을 포함한 JSON 형태로 한국어로 답변해주세요.\n\n"
+                "- current_spending: '현재 소비 금액 (예: 1,200,000원)'\n"
+                "- unnecessary_items: ['불필요한 소비 항목1', '불필요한 소비 항목2']\n"
+                "- possible_reduction: '감축할 수 있는 금액 (예: 200,000원)'\n"
+                "- recommendation: '구체적이고 실현 가능한 소비 절감 방안'\n\n"
+                "JSON 형식으로만 답변해주세요."
+            )
+
+            # OpenAI 클라이언트 가져오기
+            client = get_openai_client()
+            if not client:
+                return JsonResponse({"error": "OpenAI API 키가 설정되지 않았습니다."}, status=500)
+                
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "너는 사용자의 소비 데이터를 기반으로 금융 조언을 해주는 한국어 상담사입니다."
+                    },
+                    {"role": "user", "content": prompt}
+                ]
+            )
+
+            recommendation = response.choices[0].message.content
+            return JsonResponse({
+                "monthly_spending": monthly_spending,
+                "recommendation": recommendation
+            })
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    # GPT 응답을 JSON으로 파싱해서 그대로 프론트에 전달
+    recommendation_json = json.loads(response.choices[0].message.content)
+    return Response(recommendation_json)

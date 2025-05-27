@@ -15,22 +15,21 @@ def camel_to_snake(name):
   {'items':
    {'item':
     [{'basDt': '20250522',
-                        'clpr': '148100',
-                        'fltRt': '.09',
-                        'hipr': '148700',
-                        'isinCd': 'KRD040200002',
-                        'itmsNm': '금 99.99_1Kg',
-                        'lopr': '147010',
-                        'mkp': '147390',
-                        'srtnCd': '04020000',
-                        'trPrc': '21058218970',
-                        'trqu': '142248',
-                        'vs': '140'},
-                        ]
-                        }
-                        }
-                        }
-                        """
+    'clpr': '148100',
+    'fltRt': '.09',
+    'hipr': '148700',
+    'isinCd': 'KRD040200002',
+    'itmsNm': '금 99.99_1Kg',
+    'lopr': '147010',
+    'mkp': '147390',
+    'srtnCd': '04020000',
+    'trPrc': '21058218970',
+    'trqu': '142248',
+    'vs': '140'},
+    ]}
+    }
+}
+"""
     
 # 금융 데이터 전처리 프로세스
 def data_preprocessing(data, spot_type, spot_name):

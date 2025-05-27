@@ -119,27 +119,33 @@ def generate_user_dummy_data(user):
                     org_code=org_code
                 ))
 
-                for _ in range(random.randint(3, 6)):
-                    bills.append(CardBill(
-                        user_id=user.id,
-                        org_code=org_code,
-                        charge_amt=random.randint(100000, 1000000),
-                        charge_day=str(charge_day := random.choice([5, 10, 15, 25])),
-                        charge_month=(charge_date := fake.date_between(start_date="-6M", end_date="today")).strftime("%Y%m"),
-                        paid_out_date=(
-                            datetime(charge_date.year, charge_date.month + 1, int(charge_day))
-                            if charge_date.month < 12
-                            else datetime(charge_date.year + 1, 1, int(charge_day))
-                        ).strftime("%Y%m%d")
-                    ))
+                # for _ in range(random.randint(3, 6)):
+                #     bills.append(CardBill(
+                #         user_id=user.id,
+                #         org_code=org_code,
+                #         charge_amt=random.randint(100000, 1000000),
+                #         charge_day=str(charge_day := random.choice([5, 10, 15, 25])),
+                #         charge_month=(charge_date := fake.date_between(start_date="-6M", end_date="today")).strftime("%Y%m"),
+                #         paid_out_date=(
+                #             datetime(charge_date.year, charge_date.month + 1, int(charge_day))
+                #             if charge_date.month < 12
+                #             else datetime(charge_date.year + 1, 1, int(charge_day))
+                #         ).strftime("%Y%m%d")
+                #     ))
 
-        db.add_all(cards + bills)
+        db.add_all(cards)
         db.commit()
 
         # 3. 카드 승인내역
-        print("🧾 카드 승인내역 생성 중...")
+        print("🧯 카드 승인내역 생성 중...")
         approvals = []
+        # 카드별 승인된 금액을 추적하기 위한 사전
+        card_approved_amounts = {}
+        
         for card in cards:
+            # 카드별 승인 금액 초기화
+            card_approved_amounts[card.card_id] = 0
+            
             for _ in range(random.randint(5, 12)):
                 # 카테고리, 서브 카테고리, 소비처를 랜덤하게 선택
                 category, subcategory, merchant = random.choice(ALL_MERCHANTS)
@@ -170,20 +176,50 @@ def generate_user_dummy_data(user):
                     installment = None
                 
                 approved_time = fake.date_time_between(start_date="-4M", end_date="now")
+                # 승인 상태 랜덤 선택
+                status = random.choice(["01", "02", "03"])
+                # 승인 금액 랜덤 생성
+                approved_amt = random.randint(min_amount, max_amount)
+                
+                # 승인된 경우(status="01") 금액 합산
+                if status == "01":
+                    card_approved_amounts[card.card_id] += approved_amt
+                
                 approvals.append(CardApprovalDomestic(
                     user_id=card.user_id,
                     card_id=card.card_id,
                     approved_dtime=approved_time.strftime("%Y%m%d%H%M"),
                     approved_num=f"A{uuid.uuid4().hex[:8]}",
-                    status=random.choice(["01", "02", "03"]),
-                    # pay_type=random.choice(["01", "02"]),
+                    status=status,
                     pay_type=pay_type,
                     merchant_name=merchant,  # 소비처명만 사용
                     merchant_regno=fake.bothify(text="###-##-#####"),
-                    approved_amt=random.randint(min_amount, max_amount),  # 카테고리별 금액 범위 적용
+                    approved_amt=approved_amt,  # 카테고리별 금액 범위 적용
                     total_install_cnt=installment
                 ))
+        
         db.add_all(approvals)
+        db.commit()
+        
+        # 4. 카드 청구서 - 승인된 금액 합계를 사용
+        print("💳 카드 청구서 생성 중...")
+        bills = []
+        for card in cards:
+            for _ in range(random.randint(3, 6)):
+                bills.append(CardBill(
+                    user_id=card.user_id,
+                    org_code=card.org_code,
+                    charge_amt=card_approved_amounts[card.card_id],  # 승인된 금액 합계 사용
+                    charge_day=str(charge_day := random.choice([5, 10, 15, 25])),
+                    charge_month=(charge_date := fake.date_between(start_date="-6M", end_date="today")).strftime("%Y%m"),
+                    paid_out_date=(
+                        datetime(charge_date.year, charge_date.month + 1, int(charge_day))
+                        if charge_date.month < 12
+                        else datetime(charge_date.year + 1, 1, int(charge_day))
+                    ).strftime("%Y%m%d")
+                ))
+        
+        db.add_all(bills)
         db.commit()
         
 
