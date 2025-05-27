@@ -1,96 +1,148 @@
 <template>
-  <section class="kpi-section">
-    <div class="kpi-card full-width">
-      <h3>카드사별 총 사용 금액</h3>
-      <ul class="summary-list">
-        <li v-for="summary in summaries" :key="summary.org_code">
-          <span class="label">{{ summary.org_name }}</span>
-          <span class="amount">{{ formatAmount(summary.total) }}원</span>
-        </li>
-      </ul>
+  <div class="bg-white rounded-xl shadow-sm p-6">
+    <h2 class="text-xl text-black font-semibold mb-6">카드 사용 현황</h2>
+    
+    <!-- 전체 요약 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-blue-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-600">총 카드 수</h3>
+        <p class="text-2xl font-bold text-blue-600">{{ cards.length }}장</p>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-600">이번 달 총 지출</h3>
+        <p class="text-2xl font-bold text-blue-600">{{ formatNumber(totalSpending) }}원</p>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-600">평균 결제 금액</h3>
+        <p class="text-2xl font-bold text-blue-600">{{ formatNumber(averageSpending) }}원</p>
+      </div>
     </div>
-  </section>
+
+    <!-- 카드 목록 -->
+    <div class="space-y-4">
+      <div 
+        v-for="card in cards" 
+        :key="card.card_id" 
+        class="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+        @click="openCardDetails(card)"
+      >
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-semibold text-black text-lg">{{ card.card_name }}</h3>
+            <p class="text-sm text-gray-600">{{ maskCardNumber(card.card_num) }}</p>
+          </div>
+          <span :class="[
+            'px-2 py-1 text-sm rounded-full',
+            card.card_type === '01' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+          ]">
+            {{ getCardTypeText(card.card_type) }}
+          </span>
+        </div>
+        <div class="mt-2 text-sm text-gray-600">
+          <p>{{ card.org_code }} | {{ card.card_member === '1' ? '본인' : '가족' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 카드 상세 모달 -->
+    <CardDetailModal
+      :show="!!selectedCard"
+      :card="selectedCard"
+      :approvals="cardApprovals"
+      @close="closeModal"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import bills from '@/data/bills.json'
+import { ref, computed } from 'vue'
+import { PropType } from 'vue'
+import CardDetailModal from './CardDetailModal.vue'
 
-const currentUserId = '8e482e4e-85ed-4708-8f85-2183f6d9dc03'
-
-const orgNameMap: Record<string, string> = {
-  SHINHAN_CARD: '신한카드',
-  KAKAO: '카카오카드',
-  HYUNDAI: '현대카드',
-  HANA_CARD: '하나카드',
-  IBK: 'IBK카드',
-  LOTTE: '롯데카드',
-  SAMSUNG: '삼성카드',
-  WOORI_CARD: '우리카드',
-  KB_CARD: '국민카드',
-  BC: 'BC카드',
-  SC: 'SC제일은행',
-  NONGHYUP: '농협카드'
+interface Card {
+  card_id: string;
+  numeric_id: number;
+  card_name: string;
+  card_num: string;
+  card_type: string;
+  org_code: string;
+  card_member: string;
 }
 
-const grouped = bills
-  .filter(bill => bill.user_id === currentUserId)
-  .reduce((acc: Record<string, number>, cur) => {
-    if (!acc[cur.org_code]) acc[cur.org_code] = 0
-    acc[cur.org_code] += cur.charge_amt
-    return acc
-  }, {})
+interface CardApproval {
+  card_id: number;
+  approved_num: string;
+  approved_dtime: string;
+  approved_amt: number;
+  merchant_name: string;
+  status: string;
+  total_install_cnt: number;
+}
 
-const summaries = computed(() => {
-  return Object.entries(grouped).map(([org_code, total]) => ({
-    org_code,
-    org_name: orgNameMap[org_code] || org_code,
-    total
-  }))
+const props = defineProps({
+  cards: {
+    type: Array as PropType<Card[]>,
+    required: true,
+    default: () => []
+  },
+  totalSpending: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  cardApprovals: {
+    type: Array as PropType<CardApproval[]>,
+    required: true,
+    default: () => []
+  }
 })
 
-const formatAmount = (amount: number) =>
-  amount.toLocaleString('ko-KR')
+const selectedCard = ref<Card | null>(null)
+
+// 카드 상세 모달 열기
+const openCardDetails = (card: Card) => {
+  selectedCard.value = card
+}
+
+// 카드 상세 모달 닫기
+const closeModal = () => {
+  selectedCard.value = null
+}
+
+// 평균 결제 금액 계산
+const averageSpending = computed(() => {
+  if (props.cards.length === 0) return 0
+  return Math.round(props.totalSpending / props.cards.length)
+})
+
+// 카드 번호 마스킹
+const maskCardNumber = (cardNum: string) => {
+  if (!cardNum) return ''
+  return cardNum.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1-****-****-$4')
+}
+
+// 카드 타입 텍스트 변환
+const getCardTypeText = (type: string) => {
+  const types = {
+    '01': '신용',
+    '02': '체크',
+    '03': '소액신용체크'
+  }
+  return types[type] || '기타'
+}
+
+// 숫자 포맷팅
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('ko-KR').format(num)
+}
 </script>
 
 <style scoped>
-.kpi-section {
-  margin-bottom: 2rem;
+.card-type-credit {
+  @apply bg-red-100 text-red-800;
 }
 
-.kpi-card.full-width {
-  /* width: 100%; */
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.summary-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  margin-top: 1rem;
-}
-
-.summary-list li {
-  display: flex;
-  flex-direction: column;
-  min-width: 180px;
-}
-
-.label {
-  color: #666;
-  font-size: 0.95rem;
-  margin-bottom: 0.25rem;
-}
-
-.amount {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111;
+.card-type-debit {
+  @apply bg-blue-100 text-blue-800;
 }
 </style>

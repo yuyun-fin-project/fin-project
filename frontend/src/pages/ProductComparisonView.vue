@@ -63,6 +63,8 @@ const authError = ref(null)
 const currentSort = ref('rate_desc')
 const modalStore = useModalStore()
 
+const API_BASE_URL = 'http://localhost:8000'
+
 // 인증 상태 확인
 const checkAuthStatus = async () => {
   try {
@@ -122,9 +124,13 @@ const fetchProducts = async (searchParams = {}) => {
     await checkAuthStatus()
     
     const accessToken = localStorage.getItem('access_token')
-    const response = await axios.get('/finrecom/', {
+    const response = await axios.get(`${API_BASE_URL}/finrecom/`, {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      params: searchParams
+      params: {
+        bank: searchParams.bank || '',
+        product_type: searchParams.productType !== 'all' ? searchParams.productType : '',
+        sort_by: searchParams.sortBy || 'rate_desc'
+      }
     })
     console.log('API 응답:', response.data)
 
@@ -172,8 +178,13 @@ const fetchProducts = async (searchParams = {}) => {
 
 // 검색 처리
 const handleSearch = (searchParams) => {
-  currentSort.value = searchParams.sort || 'rate_desc'
-  fetchProducts(searchParams)
+  console.log('검색 파라미터:', searchParams) // 디버깅용
+  currentSort.value = searchParams.sortBy || 'rate_desc'
+  fetchProducts({
+    bank: searchParams.bank || '',
+    productType: searchParams.productType || 'all',
+    sortBy: searchParams.sortBy || 'rate_desc'
+  })
 }
 
 // 북마크 업데이트 처리

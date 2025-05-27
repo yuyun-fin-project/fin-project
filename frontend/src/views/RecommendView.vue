@@ -142,30 +142,65 @@
             :enter="{ opacity: 1, y: 0 }"
             class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-900">추천 금융상품</h2>
+            <div class="mt-2 p-4 bg-blue-50 rounded-lg">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="text-sm text-gray-600">
+                  <p class="font-medium text-blue-900 mb-1">추천 기준</p>
+                  <ul class="list-disc list-inside space-y-1">
+                    <li>선택하신 {{ formData.product_type === 'D' ? '예금' : '적금' }} 상품 중에서 선별했어요</li>
+                    <li>{{ formData.save_trm }}개월의 저축 기간을 고려했어요</li>
+                    <li v-if="formData.monthly_saving">월 {{ formData.monthly_saving }}만원의 저축 금액을 고려했어요</li>
+                    <li v-if="formData.additional_requirements">
+                      입력하신 "{{ formData.additional_requirements }}" 조건을 반영했어요
+                    </li>
+                    <li v-if="!formData.additional_requirements">
+                      금리가 가장 높은 상품을 우선적으로 추천했어요
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <div v-if="loading" class="flex justify-center py-12">
               <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
             <div v-else-if="recommendations.length" class="space-y-4">
               <div v-for="(item, index) in recommendations" :key="index"
-                class="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300">
+                class="bg-white rounded-lg shadow-md p-6 space-y-4">
                 <div class="flex justify-between items-start">
                   <div>
-                    <h3 class="font-semibold text-lg text-gray-900">{{ item.product.fin_prdt_nm }}</h3>
-                    <p class="text-gray-500 mt-1">{{ item.product.kor_co_nm }}</p>
+                    <h3 class="font-semibold text-lg text-gray-900">{{ item['상품명'] || item.product?.fin_prdt_nm }}</h3>
+                    <p class="text-gray-500 mt-1">{{ item['금융사'] || item.product?.kor_co_nm }}</p>
                   </div>
                   <div class="px-3 py-1 bg-blue-50 text-blue-500 rounded-full text-sm font-medium">
-                    유사도: {{ (1 - item.distance).toFixed(2) }}
+                    {{ item.distance ? `유사도: ${(1 - item.distance).toFixed(2)}` : `금리: ${item['금리']}%` }}
                   </div>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-4">
                   <div class="bg-gray-50 p-3 rounded-lg">
-                    <span class="text-gray-500 text-sm">가입 기간</span>
-                    <div class="font-medium mt-1">{{ item.product.options[0]?.save_trm }}개월</div>
+                    <span class="text-gray-500 text-sm">상품 유형</span>
+                    <div class="font-medium mt-1 text-black">
+                      {{ item['금융상품유형'] === 'D' ? '예금' : '적금' }}
+                    </div>
                   </div>
                   <div class="bg-gray-50 p-3 rounded-lg">
                     <span class="text-gray-500 text-sm">최고 금리</span>
-                    <div class="font-medium mt-1">{{ item.product.options[0]?.intr_rate2 }}%</div>
+                    <div class="font-medium mt-1 text-black">{{ item['금리'] }}%</div>
                   </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-4">
+                  <button
+                    @click="openDetailModal(item)"
+                    class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+                  >
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    자세히 보기
+                  </button>
                 </div>
               </div>
             </div>
@@ -199,13 +234,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
+import { useModalStore } from '@/stores/modalStore.js'
 
 const steps = ['상품 유형', '저축 기간', '저축 금액', '추가 조건', '추천 결과']
 const currentStep = ref(0)
 const loading = ref(false)
 const recommendations = ref([])
+const router = useRouter()
+const modalStore = useModalStore()
 
 const productTypes = [
   {
@@ -257,15 +296,203 @@ const nextStep = async () => {
   currentStep.value++
 }
 
+const getToken = () => {
+  // 여러 가능한 키에서 토큰을 찾습니다
+  const token = localStorage.getItem('access_token') || 
+                localStorage.getItem('access') || 
+                localStorage.getItem('token')
+  if (token) {
+    console.log('토큰 확인:', token.substring(0, 10) + '...')  // 토큰의 앞부분만 출력
+  }
+  return token
+}
+
+// axios 기본 설정 추가
+axios.defaults.baseURL = 'http://localhost:8000'
+
 const getRecommendations = async () => {
   loading.value = true
   try {
-    const response = await axios.post('http://localhost:8000/api/recommend/', formData.value)
-    recommendations.value = response.data
+    const token = getToken()
+
+    if (!token) {
+      alert('로그인이 필요한 서비스입니다.')
+      router.push('/login')
+      return
+    }
+
+    const params = {
+      product_type: formData.value.product_type,
+      save_term: formData.value.save_trm,
+      query: formData.value.additional_requirements
+    }
+    
+    // 1. 추천 상품 목록 조회
+    const recommendResponse = await axios.get('/finrecom/recommend/', {
+      params,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    console.log('추천 API 응답:', recommendResponse.data)
+
+    // 2. 전체 상품 목록 조회
+    const productsResponse = await axios.get('/finrecom/', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    const allProducts = productsResponse.data.results.prd || []
+    console.log('전체 상품 목록:', allProducts)
+
+    // 3. 추천 상품과 전체 상품 매칭하여 상세 정보 결합
+    recommendations.value = await Promise.all(recommendResponse.data.map(async (item, index) => {
+      console.log('처리 중인 추천 항목:', item)
+
+      // 상품명과 금융사로 매칭되는 상품 찾기
+      const matchingProduct = allProducts.find(p => 
+        p.fin_prdt_nm === item['상품명'] && 
+        p.kor_co_nm === item['금융사']
+      )
+
+      console.log('매칭된 전체 상품 정보:', matchingProduct)
+
+      // 금리 정보 구성
+      const productRates = matchingProduct?.options || []
+      if (productRates.length === 0 && matchingProduct) {
+        // options가 없는 경우 기본 금리 정보 생성
+        const baseRate = {
+          save_trm: formData.value.save_trm,
+          intr_rate: item['금리'],
+          intr_rate2: item['우대금리'] || item['금리'],
+          intr_rate_type: 'S',
+          intr_rate_type_nm: '단리'
+        }
+        productRates.push(baseRate)
+      }
+
+      // 저축 기간으로 정렬
+      productRates.sort((a, b) => parseInt(a.save_trm) - parseInt(b.save_trm))
+
+      console.log('상품 금리 정보:', productRates)
+
+      // 고유 ID 생성 (실제 상품 ID가 있으면 사용, 없으면 생성)
+      const uniqueId = matchingProduct?.id || `${item['금융사']}_${item['상품명']}_${index}`
+
+      // 상품 정보 통합
+      const processedItem = {
+        ...item,
+        id: uniqueId,
+        '상품명': item['상품명'],
+        '금융사': item['금융사'],
+        '금융상품유형': item['금융상품유형'],
+        '금리': item['금리'],
+        '가입방법': matchingProduct?.join_way || '정보 없음',
+        '가입제한': matchingProduct?.join_deny || '정보 없음',
+        '가입대상': matchingProduct?.join_member || '정보 없음',
+        '부가정보': matchingProduct?.etc_note || '정보 없음',
+        // 원본 상품 정보도 저장 (전체 정보를 그대로 유지하고 options 추가)
+        originalProduct: matchingProduct ? {
+          ...matchingProduct,
+          options: productRates
+        } : null
+      }
+
+      console.log('처리된 추천 항목:', processedItem)
+      return processedItem
+    }))
+
+    console.log('최종 추천 목록:', recommendations.value)
+
   } catch (error) {
     console.error('추천 상품 조회 실패:', error)
+    console.log('에러 상세:', error.response?.data)
+    if (error.response?.status === 401) {
+      alert('인증이 만료되었습니다. 다시 로그인해주세요.')
+      router.push('/login')
+    } else {
+      alert('추천 상품을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   } finally {
     loading.value = false
   }
 }
+
+const openDetailModal = async (item) => {
+  try {
+    console.log('모달에 전달할 상품 데이터:', item.originalProduct)
+
+    // 상품 ID 확인
+    const productId = item.originalProduct?.id || item.id
+    if (!productId) {
+      console.error('상품 ID를 찾을 수 없습니다:', item)
+      throw new Error('상품 ID가 없습니다.')
+    }
+
+    // 금리 정보 중복 제거 (save_trm 기준)
+    const uniqueOptions = []
+    const seenTerms = new Set()
+    
+    // 먼저 options를 금리 기준으로 정렬 (높은 금리가 먼저 오도록)
+    const sortedOptions = [...(item.originalProduct?.options || [])].sort((a, b) => {
+      const rateA = parseFloat(a.intr_rate2) || parseFloat(a.intr_rate) || 0
+      const rateB = parseFloat(b.intr_rate2) || parseFloat(b.intr_rate) || 0
+      return rateB - rateA
+    })
+
+    // 정렬된 options에서 각 save_trm당 가장 높은 금리만 선택
+    sortedOptions.forEach(option => {
+      if (!seenTerms.has(option.save_trm)) {
+        seenTerms.add(option.save_trm)
+        uniqueOptions.push(option)
+      }
+    })
+
+    // 기간순으로 재정렬
+    uniqueOptions.sort((a, b) => parseInt(a.save_trm) - parseInt(b.save_trm))
+
+    // 상품 데이터 구성 - 원본 데이터를 최대한 활용
+    const product = {
+      ...item.originalProduct,
+      id: productId,
+      fin_prdt_nm: item['상품명'],
+      kor_co_nm: item['금융사'],
+      prd_type: item['금융상품유형'],
+      options: uniqueOptions  // 중복이 제거된 금리 정보 사용
+    }
+
+    console.log('모달에 최종 전달되는 상품 데이터:', product)
+
+    // 모달 열기
+    modalStore.openProductDetailModal(product, {
+      onBookmarkUpdated: () => {
+        getRecommendations()
+      }
+    })
+  } catch (error) {
+    console.error('상품 상세 정보 처리 실패:', error)
+    alert('상품 정보를 불러오는데 실패했습니다.')
+  }
+}
+
+// 컴포넌트 마운트 시 토큰 확인
+onMounted(() => {
+  const token = getToken()
+  if (!token) {
+    console.warn('토큰이 없습니다!')
+  }
+})
+
+// axios 인터셉터 추가
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      console.log('401 에러 발생. 요청 헤더:', error.config?.headers)
+    }
+    return Promise.reject(error)
+  }
+)
 </script> 

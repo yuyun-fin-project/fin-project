@@ -90,7 +90,18 @@ def recommend_products_by_text(user_query, products, top_n=3):
             product = products[idx]
             sim_score = similarities[idx]
             
-            # 최고 금리 옵션 찾기
+            # 모든 금리 옵션 정보 가져오기
+            options_data = []
+            for option in product.options.all():
+                options_data.append({
+                    'save_trm': option.save_trm,
+                    'intr_rate': option.intr_rate,
+                    'intr_rate2': option.intr_rate2,
+                    'intr_rate_type': option.intr_rate_type,
+                    'intr_rate_type_nm': option.intr_rate_type_nm
+                })
+            
+            # 최고 금리 옵션 찾기 (표시용)
             best_option = product.options.order_by('-intr_rate2').first()
             if best_option:
                 rate = best_option.intr_rate2 or best_option.intr_rate or 0
@@ -103,7 +114,18 @@ def recommend_products_by_text(user_query, products, top_n=3):
                 "금융상품유형": product.prd_type,
                 "금리": rate,
                 "유사도": round(float(sim_score), 4),
-                "상품설명": product.etc_note[:100] + "..." if len(product.etc_note) > 100 else product.etc_note
+                "상품설명": product.etc_note[:100] + "..." if len(product.etc_note) > 100 else product.etc_note,
+                "originalProduct": {
+                    "id": product.id,
+                    "fin_prdt_nm": product.fin_prdt_nm,
+                    "kor_co_nm": product.kor_co_nm,
+                    "prd_type": product.prd_type,
+                    "join_way": product.join_way,
+                    "join_deny": product.join_deny,
+                    "join_member": product.join_member,
+                    "etc_note": product.etc_note,
+                    "options": options_data
+                }
             })
         
         return recommendations
