@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'url'
 import { loadEnv } from 'vite'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -10,7 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
+        '@': path.resolve(__dirname, 'src'),
       },
     },
     server: {
@@ -20,15 +21,16 @@ export default defineConfig(({ mode }) => {
         overlay: false
       },
       proxy: {
-        '/api/finlifeapi': {
-          target: 'https://finlife.fss.or.kr',
+        '/api/finlife': {
+          target: 'http://finlife.fss.or.kr/finlifeapi',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api\/finlifeapi/, '/finlifeapi'),
+          rewrite: (path) => path.replace(/^\/api\/finlife/, ''),
           configure: (proxy, options) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
-              proxyReq.setHeader('Origin', 'https://finlife.fss.or.kr');
-              proxyReq.setHeader('Referer', 'https://finlife.fss.or.kr/');
+              proxyReq.setHeader('Origin', 'http://finlife.fss.or.kr');
+              proxyReq.setHeader('Referer', 'http://finlife.fss.or.kr/');
+              proxyReq.setHeader('Accept', 'application/json');
             });
             proxy.on('proxyRes', (proxyRes, req, res) => {
               proxyRes.headers['Access-Control-Allow-Origin'] = '*';
@@ -42,6 +44,28 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/dapi\.kakao\.com/, '')
+        },
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/finrecom': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/finrecom/, '/finrecom'),
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.error('프록시 에러:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('프록시 요청:', req.method, req.url);
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('프록시 응답:', proxyRes.statusCode);
+            });
+          }
         }
       }
     },

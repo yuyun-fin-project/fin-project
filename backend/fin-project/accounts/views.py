@@ -74,23 +74,19 @@ def google_callback(request):
     
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
-
     response = redirect(f"http://localhost:5173/login-success?access={access_token}")
     response.set_cookie(
         key='refresh_token',
         value=str(refresh_token),
         httponly=True,
-        secure=True,
+        secure=False,  # 개발 환경에서는 False
         samesite='Lax',
-        max_age=60 * 60 * 24 * 14
+        domain='localhost',  # 도메인 설정
+        path='/',  # 경로 설정
+        max_age=60 * 60 * 24 * 14  # 14일
     )
     return response
 
-# refresh 토큰 전달하기
-class CookieTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        request.data['refresh'] = request.COOKIES.get('refresh_token')
-        return super().post(request, *args, **kwargs)
 
 # 카카오 로그인
 @api_view(['GET'])
@@ -149,15 +145,16 @@ def kakao_callback(request):
 
     refresh_token = RefreshToken.for_user(user)
     access_token = str(refresh_token.access_token)
-
     response = redirect(f"http://localhost:5173/login-success?access={access_token}")
     response.set_cookie(
         key='refresh_token',
         value=str(refresh_token),
         httponly=True,
-        secure=True,
+        secure=False,  # 개발 환경에서는 False
         samesite='Lax',
-        max_age=60 * 60 * 24 * 14
+        domain='localhost',  # 도메인 설정
+        path='/',  # 경로 설정
+        max_age=60 * 60 * 24 * 14  # 14일
     )
     return response
 
@@ -182,3 +179,12 @@ def profile(request, user_id):
         return Response(serializer.data)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+
+# refresh 토큰 전달하기
+class CookieTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        print('쿠키:', request.COOKIES)  # ✅ 확인용
+        request.data['refresh'] = request.COOKIES.get('refresh_token')
+        return super().post(request, *args, **kwargs)
+    

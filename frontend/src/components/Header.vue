@@ -29,7 +29,10 @@ const { isAuthenticated } = storeToRefs(authStore)
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    router.push('/login')
+    // 로그아웃 후 현재 페이지가 인증이 필요한 페이지라면 홈으로 이동
+    if (router.currentRoute.value.meta.requiresAuth) {
+      router.push('/')
+    }
   } catch (error) {
     console.error('로그아웃 실패:', error)
   }

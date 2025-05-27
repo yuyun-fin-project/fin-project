@@ -6,12 +6,12 @@ from .models import Article, Comment
 from .serializers import ArticleSerializer, CommentSerializer
 # 권한 별 접근 관리
 from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
-
+# get, post 함수 나누기
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
 def article_get_or_create(request):
     if request.method == 'GET':
         articles = Article.objects.all()
@@ -21,20 +21,30 @@ def article_get_or_create(request):
             "results": serializer.data
         })
     elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            raise PermissionDenied("로그인이 필요합니다.")
         serializer = ArticleSerializer(data=request.POST)
         if serializer.is_valid(raise_exception=True):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+
+
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def article_detail(request, article_pk):
     article = get_object_or_404(Article, pk=article_pk)
+    
     if request.method == 'GET':
         serializer = ArticleSerializer(article)
         return Response(serializer.data)
     
-    elif request.method == 'PUT':
+    # 작성자 권한 체크
+    if request.user != article.user:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'PUT':
         serializer = ArticleSerializer(article, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -49,7 +59,7 @@ def article_detail(request, article_pk):
 
 # 조건 별로 검색하는 함수 (query 기반)
 @api_view(['GET'])
-def artist_condition_list(request):
+def article_search(request):
     query_param = request.query_params.get('is_group', False)
     if query_param:
         if query_param == 'True' or query_param == 'true':
@@ -60,3 +70,4 @@ def artist_condition_list(request):
         articles = Article.objects.all()
     
     serializer = ArticleSerializer(artists, many=True)
+

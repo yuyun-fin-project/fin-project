@@ -1,37 +1,40 @@
 import { ref } from 'vue'
 
-// 디바운스 함수
-export function useDebounce(value, delay = 300) {
+// 디바운스 훅
+export const useDebounce = (callback, delay = 300) => {
   let timeout
-  return new Promise(resolve => {
+  return (...args) => {
     clearTimeout(timeout)
-    timeout = setTimeout(() => {
-      resolve(value)
-    }, delay)
-  })
+    timeout = setTimeout(() => callback(...args), delay)
+  }
 }
 
-// 검색 히스토리 관리
-export function useSearchHistory(key = 'search_history', maxItems = 5) {
+// 검색 기록 관리
+export const useSearchHistory = () => {
+  const MAX_HISTORY = 10
+
   const getHistory = () => {
-    const history = localStorage.getItem(key)
-    return history ? JSON.parse(history) : []
+    try {
+      return JSON.parse(localStorage.getItem('search_history')) || []
+    } catch {
+      return []
+    }
   }
 
   const addToHistory = (term) => {
     if (!term.trim()) return
-    
+
     const history = getHistory()
     const newHistory = [
       term,
       ...history.filter(item => item !== term)
-    ].slice(0, maxItems)
-    
-    localStorage.setItem(key, JSON.stringify(newHistory))
+    ].slice(0, MAX_HISTORY)
+
+    localStorage.setItem('search_history', JSON.stringify(newHistory))
   }
 
   const clearHistory = () => {
-    localStorage.removeItem(key)
+    localStorage.removeItem('search_history')
   }
 
   return {
@@ -42,14 +45,17 @@ export function useSearchHistory(key = 'search_history', maxItems = 5) {
 }
 
 // URL 쿼리 파라미터 관리
-export function useQueryParams(router) {
+export const useQueryParams = (router) => {
   const updateQueryParams = (params) => {
-    router.push({
-      query: {
-        ...router.currentRoute.value.query,
-        ...params
+    const query = { ...router.currentRoute.value.query }
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        query[key] = value
+      } else {
+        delete query[key]
       }
     })
+    router.push({ query })
   }
 
   const getQueryParams = () => {
@@ -62,7 +68,7 @@ export function useQueryParams(router) {
   }
 }
 
-// 정렬 함수
+// 정렬 함수들
 export const sortFunctions = {
   interestRate: (a, b) => b.interest_rate - a.interest_rate,
   bankName: (a, b) => a.bank_name.localeCompare(b.bank_name),

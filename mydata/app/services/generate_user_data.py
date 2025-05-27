@@ -140,7 +140,7 @@ def generate_user_dummy_data(user):
         print("🧾 카드 승인내역 생성 중...")
         approvals = []
         for card in cards:
-            for _ in range(random.randint(5, 15)):
+            for _ in range(random.randint(5, 12)):
                 # 카테고리, 서브 카테고리, 소비처를 랜덤하게 선택
                 category, subcategory, merchant = random.choice(ALL_MERCHANTS)
                 

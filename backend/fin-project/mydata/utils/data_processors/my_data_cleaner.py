@@ -1,5 +1,5 @@
-from mydata.models import Card
-# from .serializers import CardSerializer
+from mydata.models import Card, CardApproval, CardBill
+from mydata.serializers import CardSerializer, CardApprovalSerializer
 
 # 응답 형식
 ''' 
@@ -25,7 +25,7 @@ from mydata.models import Card
 # 모델 필드
 '''
     card_id = models.CharField(max_length=100, primary_key=True, help_text="카드 식별자")
-    masked_card_number = models.CharField(max_length=20, help_text="마스킹된 카드번호")
+    card_num = models.CharField(max_length=20, help_text="카드번호")
     card_name = models.CharField(max_length=100, help_text="카드상품명")
     card_type = models.CharField(max_length=20, choices=CARD_TYPE_CHOICES, help_text="카드구분")
     owner_type = models.CharField(max_length=10, choices=OWNER_TYPE_CHOICES, help_text="본인/가족 구분")
@@ -33,23 +33,40 @@ from mydata.models import Card
 '''
 
 # 마이 데이터 전처리 프로세스
-def data_preprocessing(data):
-    # 카드 리스트 담기
-    card_field_names = [field.name for field in Card._meta.fields]
-    cleaned_card_list = []
-    # 상품 리스트 추출
-    card_list = data.get("data", {})
-    jwt_token = data.get("access_token", {})
-    for card in card_list:
-        card_temp = {}
-        for key, value in card.items():
-            if key in card_field_names:
-                card_temp[key] = value
-        cleaned_card_list.append(card_temp)
+def data_preprocessing(data, type):
+    if type == 'cards':
+        # 카드 리스트 담기
+        card_field_names = [field.name for field in Card._meta.fields]
+        cleaned_card_list = []
+        # 상품 리스트 추출
+        card_list = data.get("data", {})
+        jwt_token = data.get("access_token", {})
+        for card in card_list:
+            card_temp = {}
+            for key, value in card.items():
+                if key in card_field_names:
+                    card_temp[key] = value
+            cleaned_card_list.append(card_temp)
+        # print(cleaned_card_list)
+        # 카드 정보 저장
+        # serializer = CardSerializer(data=cleaned_card_list, many=True)
+        # if serializer.is_valid():
+        #     serializer.save()
+        return cleaned_card_list, jwt_token
     
-    # 카드 정보 저장
-    serializer = CardSerializer(data=cleaned_card_list, many=True)
-    if serializer.is_valid():
-        serializer.save()
-    
-    return serializer.data, jwt_token
+    elif type == 'approvals':
+        approval_field_names = [field.name for field in CardApproval._meta.fields]
+        cleaned_approval_list = []
+        # print(approval_field_names)
+        # print(data)
+        # 상품 리스트 추출
+        approval_list = data.get("approved_list", {})
+        for approval in approval_list:
+            approval_temp = {}
+            for key, value in approval.items():
+                if key in approval_field_names:
+                    approval_temp[key] = value
+            cleaned_approval_list.append(approval_temp)
+            
+        return cleaned_approval_list
+        

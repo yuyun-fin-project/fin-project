@@ -6,5 +6,7 @@ class CardBillListResponse(BaseModel):
     rsp_code: str = "00000"
     rsp_msg: str = "정상처리"
     bill_cnt: int
+    # org_code: str
     bill_list: List[CardBillSchema]
     next_page: Optional[str] = None
+

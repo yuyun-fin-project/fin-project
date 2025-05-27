@@ -33,7 +33,8 @@
         <div
           v-for="video in recentVideos.slice(0, 3)"
           :key="video.id"
-          class="flex gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          class="flex gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          @click="modalStore.openVideoModal(video)"
         >
           <img
             :src="video.thumbnail"
@@ -55,11 +56,16 @@
       </div>
 
       <!-- 검색 전 상태 -->
-      <div
-        v-else
-        class="flex-1 flex items-center justify-center text-gray-500"
-      >
-        관심 있는 종목을 검색해보세요
+      <div v-if="!recentVideos.length && !isLoading" class="flex flex-col items-center justify-center h-full">
+        <img 
+          src="https://www.youtube.com/img/desktop/yt_1200.png"
+          alt="YouTube Logo"
+          class="w-32 mb-2 opacity-75"
+        />
+        <p class="text-gray-500 text-center text-sm">
+          관심 있는 종목을 검색하면<br/>
+          관련 유튜브 영상을 찾아드립니다
+        </p>
       </div>
     </div>
   </div>
@@ -68,10 +74,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useModalStore } from '../stores/modalStore'
 
 const router = useRouter()
+const modalStore = useModalStore()
 const searchQuery = ref('')
 const recentVideos = ref([])
+const searchResults = ref([])
 const isLoading = ref(false)
 const error = ref(null)
 
@@ -114,6 +123,7 @@ const searchVideos = async () => {
     if (!import.meta.env.VITE_YOUTUBE_API_KEY) {
       await new Promise(resolve => setTimeout(resolve, 1000)) // 가짜 로딩
       recentVideos.value = sampleData.slice(0, 3)
+      searchResults.value = sampleData.slice(0, 3)
       return
     }
 
@@ -133,18 +143,34 @@ const searchVideos = async () => {
       throw new Error('검색 결과를 가져올 수 없습니다.')
     }
 
-    recentVideos.value = data.items.map(item => ({
-      id: item.id.videoId,
+    // 비디오 상세 정보를 가져오기 위한 두 번째 API 호출
+    const videoIds = data.items.map(item => item.id.videoId).join(',')
+    const detailsResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoIds}&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`
+    )
+
+    if (!detailsResponse.ok) {
+      throw new Error('비디오 상세 정보를 가져올 수 없습니다.')
+    }
+
+    const detailsData = await detailsResponse.json()
+
+    const mappedResults = detailsData.items.map(item => ({
+      id: item.id,
       title: item.snippet.title,
       description: item.snippet.description,
       thumbnail: item.snippet.thumbnails.high.url,
       channelTitle: item.snippet.channelTitle,
       publishedAt: item.snippet.publishedAt
     }))
+
+    recentVideos.value = mappedResults
+    searchResults.value = mappedResults
   } catch (err) {
     console.error('Error fetching videos:', err)
     error.value = err.message
-    recentVideos.value = [] // 에러 시 결과 초기화
+    recentVideos.value = []
+    searchResults.value = []
   } finally {
     isLoading.value = false
   }
@@ -184,5 +210,10 @@ const formatDate = (dateString) => {
 .overflow-auto::-webkit-scrollbar-thumb {
   background-color: #CBD5E1;
   border-radius: 3px;
+}
+
+/* 커서 스타일 */
+.cursor-pointer {
+  cursor: pointer;
 }
 </style> 

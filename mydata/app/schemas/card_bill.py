@@ -7,6 +7,7 @@ class CardBillSchema(BaseModel):
     charge_day: str
     charge_month: str
     paid_out_date: str
+    org_code: str
 
 class Config:
     from_attributes = True
