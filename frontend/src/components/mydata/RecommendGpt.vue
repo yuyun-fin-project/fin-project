@@ -112,6 +112,7 @@ const props = defineProps({
   }
 })
 
+
 const emit = defineEmits(['update-recommendation'])
 
 const income = ref('')
@@ -121,6 +122,7 @@ const recommendation = ref(null)
 
 // API 기본 설정
 const API_BASE_URL = 'http://localhost:8000'
+
 
 // 데이터 분석
 const analyzeData = async () => {

@@ -1,6 +1,6 @@
 <template>
   <header class="header">
-    <router-link to="/" class="logo">Bank</router-link>
+    <router-link to="/" class="logo custom-font">YUNU'S</router-link>
     <nav class="nav">
       <router-link to="/dashboard" active-class="active">금융</router-link>
       <router-link to="/recommend" active-class="active">추천</router-link>
@@ -134,5 +134,12 @@ const handleLogout = async () => {
 .mypage-btn:hover {
   background-color: #3182f6;
   color: white !important;
+}
+
+.custom-font {
+  font-family: "Poetsen One", sans-serif;
+  font-weight: 800;
+  font-size: 2.2rem;
+  font-style: normal;
 }
 </style>

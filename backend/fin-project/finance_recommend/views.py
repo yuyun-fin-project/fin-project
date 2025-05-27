@@ -158,10 +158,8 @@ def get_spot(request, start_date=None, end_date=None):
 
     # 응답값 자리 미리 확보
     result = [[] for _ in range(3)]  # Gold, Oil, Carbon 자리 확보
-    print(api_responses)
     for idx, (response, spot) in enumerate(zip(api_responses, serializers)):
         print(f"Processing {spot[2]}...")
-        print(response.text)
         try:
             # JSON 파싱 안전 처리
             try:

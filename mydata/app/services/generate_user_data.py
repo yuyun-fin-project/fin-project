@@ -82,7 +82,7 @@ for category, subcategories in SPENDING_CATEGORIES.items():
 def generate_user_dummy_data(user):
     try:
         # 1. 사용자 생성
-        print("👥 사용자 생성 중...")
+        # print("👥 사용자 생성 중...")
         users = []
         users.append(user)
         # for _ in range(100):
@@ -118,20 +118,6 @@ def generate_user_dummy_data(user):
                     card_type=random.choice(["01", "02", "03"]),
                     org_code=org_code
                 ))
-
-                # for _ in range(random.randint(3, 6)):
-                #     bills.append(CardBill(
-                #         user_id=user.id,
-                #         org_code=org_code,
-                #         charge_amt=random.randint(100000, 1000000),
-                #         charge_day=str(charge_day := random.choice([5, 10, 15, 25])),
-                #         charge_month=(charge_date := fake.date_between(start_date="-6M", end_date="today")).strftime("%Y%m"),
-                #         paid_out_date=(
-                #             datetime(charge_date.year, charge_date.month + 1, int(charge_day))
-                #             if charge_date.month < 12
-                #             else datetime(charge_date.year + 1, 1, int(charge_day))
-                #         ).strftime("%Y%m%d")
-                #     ))
 
         db.add_all(cards)
         db.commit()
