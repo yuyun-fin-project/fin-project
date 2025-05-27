@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 배경 원 -->
+  <circle cx="400" cy="300" r="250" fill="rgba(255, 255, 255, 0.1)"/>
+  <circle cx="400" cy="300" r="200" fill="rgba(255, 255, 255, 0.05)"/>
+  
+  <!-- 그래프 라인 -->
+  <path d="M250 400 C300 380, 350 420, 400 300 C450 180, 500 220, 550 200" 
+        stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- 동전 아이콘들 -->
+  <g transform="translate(300,250)">
+    <circle cx="0" cy="0" r="40" fill="#FFD700"/>
+    <text x="0" cy="0" text-anchor="middle" dy="8" 
+          font-family="Arial" font-size="24" fill="#000">₩</text>
+  </g>
+  
+  <g transform="translate(450,200)">
+    <circle cx="0" cy="0" r="30" fill="#FFD700"/>
+    <text x="0" cy="0" text-anchor="middle" dy="6" 
+          font-family="Arial" font-size="18" fill="#000">₩</text>
+  </g>
+  
+  <g transform="translate(500,350)">
+    <circle cx="0" cy="0" r="35" fill="#FFD700"/>
+    <text x="0" cy="0" text-anchor="middle" dy="7" 
+          font-family="Arial" font-size="20" fill="#000">₩</text>
+  </g>
+  
+  <!-- AI 관련 아이콘 -->
+  <g transform="translate(350,450)">
+    <rect x="-30" y="-30" width="60" height="60" rx="10" fill="#60A5FA"/>
+    <path d="M-15 0 L15 0 M0 -15 L0 15" 
+          stroke="white" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  
+  <!-- 데이터 포인트들 -->
+  <circle cx="300" cy="380" r="6" fill="white"/>
+  <circle cx="350" cy="420" r="6" fill="white"/>
+  <circle cx="400" cy="300" r="6" fill="white"/>
+  <circle cx="450" cy="180" r="6" fill="white"/>
+  <circle cx="500" cy="220" r="6" fill="white"/>
+  
+  <!-- 장식용 선들 -->
+  <line x1="200" y1="150" x2="600" y2="450" 
+        stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  <line x1="200" y1="450" x2="600" y2="150" 
+        stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+</svg> 

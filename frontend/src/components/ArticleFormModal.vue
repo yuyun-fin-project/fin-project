@@ -1,0 +1,74 @@
+<template>
+  <div class="article-form-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content bg-white rounded-lg p-6 w-full max-w-2xl">
+      <h2 class="text-2xl font-bold mb-4 text-black">{{ isEdit ? '게시글 수정' : '새 게시글 작성' }}</h2>
+      
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">제목</label>
+          <input
+            v-model="form.title"
+            type="text"
+            placeholder="제목을 입력하세요"
+            class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+            required
+          >
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">내용</label>
+          <textarea
+            v-model="form.content"
+            placeholder="내용을 입력하세요"
+            class="w-full h-48 px-4 py-2 mb-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+            required
+          ></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button
+            type="button"
+            @click="$emit('close')"
+            class="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            {{ isEdit ? '수정' : '작성' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, defineProps, defineEmits } from 'vue'
+
+const props = defineProps({
+  article: {
+    type: Object,
+    default: null
+  }
+})
+
+const emit = defineEmits(['close', 'submit'])
+
+const isEdit = props.article !== null
+
+const form = ref({
+  title: props.article?.title || '',
+  content: props.article?.content || ''
+})
+
+const handleSubmit = () => {
+  emit('submit', {
+    title: form.value.title,
+    content: form.value.content
+  })
+}
+</script> 
